@@ -87,7 +87,7 @@ class WOEBinner:
         bads = np.array([((xs == c) & (y == 1)).sum() for c in cats], dtype=float)
         woes, iv = self._woe_iv(goods, bads)
 
-        mapping = dict(zip(cats, woes.astype(float)))
+        mapping = dict(zip(cats, woes.astype(float), strict=True))
         return {
             "mapping": mapping,
             "other_woe": mapping.get("__OTHER__", 0.0),

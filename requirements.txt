@@ -1,18 +1,18 @@
+# Runtime — what the image installs. Pins verified to resolve together
+# (pip install -r requirements.txt on Python 3.12, clean venv).
+# pyarrow is pinned BELOW 25 because streamlit 1.59.2 requires pyarrow<25;
+# the previous pin (25.0.0) made the whole file unresolvable, so the
+# quickstart, CI and the Docker build all failed at the install step.
+# Serving needs no SHAP library: reason codes use LightGBM pred_contrib (exact TreeSHAP).
+# Base image is Python 3.12 to match CI (shap 0.52.0, a dev dep, requires >= 3.12).
 pandas==3.0.2
 numpy==2.4.4
 scikit-learn==1.8.0
 lightgbm==4.6.0
-optuna==4.9.0
-shap==0.52.0
-matplotlib==3.10.8
-seaborn==0.13.2
 fastapi==0.139.2
 pydantic==2.13.4
-pyarrow==25.0.0
+pyarrow==24.0.0
 scipy==1.17.1
-pytest==9.1.1
 uvicorn==0.51.0
 streamlit==1.59.2
-httpx==0.28.1
 requests==2.33.1
-nbformat==5.10.4

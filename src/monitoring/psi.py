@@ -16,10 +16,8 @@ Bands (Siddiqi 2006): PSI < 0.10 stable · 0.10–0.25 investigate ·
 import numpy as np
 import pandas as pd
 
+from config.constants import PSI_INVESTIGATE, PSI_RETRAIN  # noqa: F401 - re-exported
 from src.models.calibration import psi as _canonical_psi
-
-PSI_INVESTIGATE = 0.10
-PSI_RETRAIN = 0.25
 
 
 def compute_psi(

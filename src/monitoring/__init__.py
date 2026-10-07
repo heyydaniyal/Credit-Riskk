@@ -23,16 +23,27 @@ import sqlite3
 import numpy as np
 import pandas as pd
 
+from config.constants import (  # single definition of bands and paths
+    ARTIFACTS_DIR,
+    PSI_INVESTIGATE,
+    PSI_RETRAIN,
+    REQUEST_LOG_DB,
+)
+
 # NOTE: aliased deliberately. This package contains a submodule named
 # `psi`, and importing it anywhere rebinds the name `psi` on this package,
 # shadowing a bare `from ... import psi`. Caught by test_monitoring.py.
 from src.models.calibration import psi as _psi
 
-PSI_INVESTIGATE = 0.10
-PSI_RETRAIN = 0.25
+REFERENCE_PATH = os.path.join(ARTIFACTS_DIR, "monitoring_reference.json")
+LOG_DB_ENV = "CREDIT_RISK_REQUEST_LOG"
 
-REFERENCE_PATH = os.path.join("artifacts", "monitoring_reference.json")
-LOG_DB = os.path.join("data", "request_log.sqlite")
+
+def log_db_path() -> str:
+    """Request-log location, resolved at CALL time: $CREDIT_RISK_REQUEST_LOG
+    if set (tests and notebooks point it at a scratch file so they never
+    write into the service's log), else config REQUEST_LOG_DB."""
+    return os.environ.get(LOG_DB_ENV) or REQUEST_LOG_DB
 
 
 # ── reference (built once from dev artifacts) ──────────────────────────────
@@ -68,7 +79,9 @@ def load_reference(path: str = REFERENCE_PATH) -> dict:
 
 
 # ── request logging (SQLite: append-friendly, single file) ─────────────────
-def init_log(db_path: str = LOG_DB) -> None:
+def init_log(db_path: str | None = None) -> None:
+    db_path = db_path or log_db_path()
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
     con = sqlite3.connect(db_path)
     con.execute(
         """CREATE TABLE IF NOT EXISTS requests (
@@ -80,7 +93,7 @@ def init_log(db_path: str = LOG_DB) -> None:
 
 
 def log_request(features: dict, p_raw: float, p_cal: float, threshold: float,
-                decision: str, db_path: str = LOG_DB) -> None:
+                decision: str, db_path: str | None = None) -> None:
     """
     Log ONLY the non-PII monitoring signals: the prediction, threshold,
     decision, and timestamp. The raw 59-field feature vector is deliberately
@@ -92,6 +105,8 @@ def log_request(features: dict, p_raw: float, p_cal: float, threshold: float,
     """
     import datetime
 
+    db_path = db_path or log_db_path()
+    init_log(db_path)  # idempotent; survives the file being removed mid-run
     con = sqlite3.connect(db_path)
     con.execute(
         "INSERT INTO requests VALUES (?,?,?,?,?,?)",
@@ -100,6 +115,30 @@ def log_request(features: dict, p_raw: float, p_cal: float, threshold: float,
     )
     con.commit()
     con.close()
+
+
+def read_log(db_path: str | None = None, window: int = 50) -> pd.DataFrame:
+    """
+    Decision drift from LIVE traffic: every logged /score request, oldest
+    first, with rolling approval rate and rolling mean t*(x) over the last
+    `window` requests. This is what makes log_request() more than a
+    write-only sink — the monitoring tab plots these series. (A product-mix
+    shift moves approvals and mean t* with no score drift; tracking both
+    separates the causes.)
+    """
+    db_path = db_path or log_db_path()
+    cols = ["ts", "p_raw", "p_cal", "threshold", "decision"]
+    if not os.path.exists(db_path):
+        return pd.DataFrame(columns=[*cols, "rolling_approval_rate", "rolling_mean_t_star"])
+    con = sqlite3.connect(db_path)
+    try:
+        df = pd.read_sql_query(f"SELECT {', '.join(cols)} FROM requests ORDER BY ts", con)
+    finally:
+        con.close()
+    approved = (df["decision"] == "APPROVE").astype(float)
+    df["rolling_approval_rate"] = approved.rolling(window, min_periods=1).mean()
+    df["rolling_mean_t_star"] = df["threshold"].rolling(window, min_periods=1).mean()
+    return df
 
 
 # ── the report ─────────────────────────────────────────────────────────────

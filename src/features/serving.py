@@ -17,6 +17,7 @@ casts — future-proof, and it returns the unseen counts so serving can log
 them (an unseen-category spike is itself a drift signal for Phase 6b).
 """
 
+import numpy as np
 import pandas as pd
 
 
@@ -41,3 +42,60 @@ def cast_with_contract(
         s = s.where(~mask_unseen, other=pd.NA)
         out[col] = pd.Categorical(s, categories=lv)
     return out, unseen_counts
+
+
+# ── derived-feature consistency (serving input gate) ──────────────────────
+# /score accepts a precomputed feature vector, so a client can send derived
+# features that contradict their own sources. The dangerous case found in
+# review: term_years is BOTH a model feature and the main driver of t*(x);
+# a 43.8%-PD reject became an approve by sending term_years=7 (t* 0.067 ->
+# 0.227), and term_years=1000 pushed t* to 0.98. Derived fields whose
+# sources are all in the payload are therefore recomputed here with the
+# SAME stateless functions used to build the training matrix, and a
+# supplied value that disagrees is rejected rather than silently trusted.
+
+def _same(a: float, b: float, rtol: float = 1e-9) -> bool:
+    a_nan, b_nan = (a is None or np.isnan(a)), (b is None or np.isnan(b))
+    if a_nan or b_nan:
+        return a_nan and b_nan
+    return abs(a - b) <= rtol * max(1.0, abs(a), abs(b))
+
+
+def derive_and_check(row: dict) -> tuple[dict, list[str]]:
+    """
+    Recompute derivable features from their sources in `row`.
+
+    Returns (row_with_derived_values, problems). `problems` lists every
+    supplied derived value that disagrees with its sources; an empty list
+    means the payload is internally consistent. Missing (None) supplied
+    derived values are filled from the sources rather than flagged.
+    """
+    from src.features.stateless import implied_term_years
+
+    def num(k):
+        v = row.get(k)
+        return np.nan if v is None else float(v)
+
+    ext = [num("EXT_SOURCE_1"), num("EXT_SOURCE_2"), num("EXT_SOURCE_3")]
+    ext_s = pd.Series(ext, dtype=float)
+    derived = {
+        "term_years": float(implied_term_years(pd.Series([num("AMT_CREDIT")]),
+                                               pd.Series([num("AMT_ANNUITY")])).iloc[0]),
+        "credit_goods_ratio": (num("AMT_CREDIT") / num("AMT_GOODS_PRICE")
+                               if num("AMT_GOODS_PRICE") not in (0.0,) else np.nan),
+        "ext_source_mean": float(ext_s.mean()) if ext_s.notna().any() else np.nan,
+        "ext_source_min": float(ext_s.min()) if ext_s.notna().any() else np.nan,
+        "ext_source_n_missing": float(ext_s.isna().sum()),
+        "EXT_SOURCE_1_is_missing": float(np.isnan(ext[0])),
+        "EXT_SOURCE_3_is_missing": float(np.isnan(ext[2])),
+    }
+    out, problems = dict(row), []
+    for k, v in derived.items():
+        supplied = row.get(k)
+        if supplied is not None:
+            if not _same(float(supplied), v):
+                problems.append(f"{k}={supplied} contradicts its sources (derived {v})")
+            # consistent supplied value is kept bit-for-bit (golden parity)
+        else:
+            out[k] = None if np.isnan(v) else v
+    return out, problems

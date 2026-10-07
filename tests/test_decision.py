@@ -11,6 +11,8 @@ What each block protects against:
                 selected off-convention
 """
 
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -195,31 +197,18 @@ def test_reason_codes_sign_convention():
     assert codes_safe == [] or all(c["contribution"] > 0 for c in codes_safe)
 
 
-def test_decision_and_cost_model_agree_and_both_source_config():
-    """F1.1/F8.2 guard: the production decision layer (decision.py) and the
-    parallel cost_model.py must produce identical thresholds, and both must
-    derive from config/constants.py so 'frozen in config' is structurally
-    true. Prevents the two implementations from ever drifting apart."""
-    import numpy as np
-
-    from src.decisioning import cost_model as CM
-    from src.models import decision as D
+def test_decision_layer_sources_config():
+    """F1.1/F8.2 guard: the decision layer's constants ARE config's, so
+    'frozen in config' is structurally true (one implementation, one source)."""
     from config import constants as C
+    from src.models import decision as D
 
-    ct = pd.Series(["Cash loans", "Cash loans", "Revolving loans", "Cash loans"])
-    amt = pd.Series([100000.0, 50000.0, 20000.0, 300000.0])
-    ann = pd.Series([100000 / (12 * 5), 50000 / (12 * 2), 5000.0, 300000 / (12 * 7)])
-
-    t_cm = CM.compute_threshold(ct, amt, ann).values
-    df = pd.DataFrame({"NAME_CONTRACT_TYPE": ct, "AMT_CREDIT": amt,
-                       "term_years": amt / (12 * ann)})
-    t_d = D.attach_cost_params(df)["t_star"].values
-    assert np.abs(t_cm - t_d).max() < 1e-12
-
-    # decision.py must now equal config (the fix), not an independent literal
     assert D.LGD["Cash loans"] == C.LGD_CASH
     assert D.M_REVOLVING == C.M_REVOLVING
     assert D.SENSITIVITY_GRID["ead_revolving"] == C.SENSITIVITY_EAD_REVOLVING
+    assert D.SENSITIVITY_GRID["cure_rate"] == C.SENSITIVITY_CURE_RATE
+    assert D.OVERRIDE_BOUNDS["lgd_cash"] == (min(C.SENSITIVITY_LGD_CASH),
+                                             max(C.SENSITIVITY_LGD_CASH))
 
 
 def test_reason_codes_complete_mapping_and_no_prohibited_basis():
@@ -230,20 +219,54 @@ def test_reason_codes_complete_mapping_and_no_prohibited_basis():
 
     import lightgbm as lgb
 
-    from src.data.load import load_modeling_frame
+    from config.constants import ARTIFACTS_DIR
+    from src.features.serving import cast_with_contract
     from src.models.explain import (
         PLAIN_LANGUAGE,
         PROHIBITED_REASON_FEATURES,
         reason_codes,
     )
 
-    feats = json.load(open("data/processed/lgbm_features.json"))["features"]
+    # runs from the deployment bundle (in CI and inside the image); the demo
+    # pool is 3,000 dev rows with every model feature
+    feats = json.load(open(os.path.join(ARTIFACTS_DIR, "lgbm_features.json")))["features"]
     assert [f for f in feats if f not in PLAIN_LANGUAGE] == []  # full coverage
 
-    dev = load_modeling_frame("dev").sample(500, random_state=0)
-    b = lgb.Booster(model_file="models/lgbm_constrained_fold0.txt")
+    levels = json.load(open(os.path.join(ARTIFACTS_DIR, "categorical_levels.json")))["levels"]
+    pool = pd.read_parquet(os.path.join(ARTIFACTS_DIR, "demo_pool.parquet"))
+    dev, _ = cast_with_contract(pool.sample(500, random_state=0), levels)
+    b = lgb.Booster(model_file=os.path.join(ARTIFACTS_DIR, "lgbm_constrained_fold0.txt"))
     codes = reason_codes(b, dev, feats, top_k=3)
     emitted = [c for row in codes for c in row]
     assert all(c["feature"] not in PROHIBITED_REASON_FEATURES for c in emitted)
     assert all(c["plain_language"] != c["feature"].replace("_", " ") for c in emitted)
     assert all(len(row) == 3 for row in codes)
+
+
+def test_crossfit_flat_is_not_an_oracle():
+    """A cross-fitted flat policy chooses each fold's threshold on the OTHER
+    folds, so it can never beat the in-sample (oracle) best flat; with
+    segments it can only add flexibility on the training folds."""
+    from src.models.decision import (
+        best_flat_threshold,
+        cash_term_segments,
+        crossfit_flat_approvals,
+    )
+
+    rng = np.random.RandomState(0)
+    n = 4000
+    p = rng.beta(1, 10, n)
+    y = (rng.rand(n) < p).astype(int)
+    df = pd.DataFrame({"NAME_CONTRACT_TYPE": np.where(rng.rand(n) < 0.1, "Revolving loans",
+                                                      "Cash loans"),
+                       "term_years": rng.uniform(0.7, 4.0, n),
+                       "AMT_CREDIT": rng.uniform(5e4, 5e5, n)})
+    cost = attach_cost_params(df)
+    folds = np.arange(n) % 5
+    _, sweep = best_flat_threshold(p, y, cost)
+    cf = realized_profit(crossfit_flat_approvals(p, y, cost, folds), y, cost)
+    assert cf <= sweep["profit"].max() + 1e-6
+    seg = cash_term_segments(cost)
+    assert set(np.unique(seg)) <= set(range(6)) and (seg[df.NAME_CONTRACT_TYPE == "Revolving loans"] == 0).all()
+    a = crossfit_flat_approvals(p, y, cost, folds, seg)
+    assert a.dtype == bool and len(a) == n

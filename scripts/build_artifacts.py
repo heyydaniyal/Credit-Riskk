@@ -8,7 +8,10 @@ this script is the single place the shipped model set is defined.
 Contents: 5 constrained fold models, the deployed isotonic calibrator, the
 scorecard fold artifacts, feature list, categorical serving contract,
 golden regression file, term-fallback rule, feature manifest, and the
-monitoring reference distributions.
+monitoring reference distributions, the demo pool, and golden_inputs —
+the 25 golden applicants' API payload fields, so the golden regression
+(pipeline AND through HTTP) runs from a fresh clone / in CI, not only on a
+machine holding the 60 MB feature matrix.
 """
 
 import hashlib
@@ -59,6 +62,7 @@ def main() -> None:
 
     # demo pool (dev rows only) so the Streamlit container is self-contained
     import pandas as _pd
+
     from src.data.load import load_dev_ids as _ldi
     _feats = json.load(open("data/processed/lgbm_features.json"))["features"]
     _fields = list(dict.fromkeys(_feats + ["NAME_CONTRACT_TYPE", "term_years",
@@ -67,6 +71,12 @@ def main() -> None:
     _dev = set(_ldi())
     _m[_m.SK_ID_CURR.isin(_dev)].sample(3000, random_state=0).reset_index(drop=True) \
         .to_parquet(os.path.join(ARTIFACT_DIR, "demo_pool.parquet"))
+
+    # golden inputs: the exact rows the golden outputs were frozen on
+    _golden_ids = json.load(open("data/processed/golden_scoring.json"))["ids"]
+    _g = _m.set_index("SK_ID_CURR").loc[_golden_ids].reset_index()
+    assert len(_g) == len(_golden_ids)
+    _g.to_parquet(os.path.join(ARTIFACT_DIR, "golden_inputs.parquet"))
 
     files = sorted(f for f in os.listdir(ARTIFACT_DIR) if f != "MANIFEST.json")
     manifest = {

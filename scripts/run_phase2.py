@@ -223,7 +223,7 @@ def stage_report() -> None:
                             "credit_income_ratio", "annuity_income_ratio", "age_years"]
                 if c in binner.numeric_bins_][:6]
     fig, axes = plt.subplots(2, 3, figsize=(12, 6))
-    for ax, col in zip(axes.ravel(), examples):
+    for ax, col in zip(axes.ravel(), examples, strict=False):
         woes = binner.numeric_bins_[col]["woes"]
         ax.bar(range(len(woes)), woes, color="#2b6cb0")
         if binner.numeric_bins_[col]["nan_woe"]:

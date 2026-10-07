@@ -17,7 +17,16 @@ import pickle
 import pandas as pd
 import pytest
 
-from config.constants import DATA_PROCESSED, MODELS_DIR, MONOTONIC_FEATURES
+from config.constants import (
+    ARTIFACTS_DIR,
+    DATA_PROCESSED,
+    HISTORY_FEATURE_PREFIXES,
+    MAX_MISSING_APPLICATION_FEATURES,
+    MAX_MISSING_HISTORY_FEATURES,
+    MODELS_DIR,
+    MONOTONIC_FEATURES,
+    NO_HISTORY_ZERO_FEATURES,
+)
 
 FEATURES = os.path.join(DATA_PROCESSED, "features_full.parquet")
 LGBM_JSON = os.path.join(DATA_PROCESSED, "lgbm_features.json")
@@ -110,25 +119,22 @@ def test_cost_convention_frozen_and_referenced():
     assert "cost_evaluation_convention.json" in p["inputs"]["cost_accounting"]
 
 
-GOLDEN = os.path.join(DATA_PROCESSED, "golden_scoring.json")
-CONSTRAINED = os.path.join(MODELS_DIR, "lgbm_constrained_fold0.txt")
+GOLDEN = os.path.join(ARTIFACTS_DIR, "golden_scoring.json")
+GOLDEN_INPUTS = os.path.join(ARTIFACTS_DIR, "golden_inputs.parquet")
+CONSTRAINED = os.path.join(ARTIFACTS_DIR, "lgbm_constrained_fold0.txt")
 
 
-@pytest.mark.skipif(not (os.path.exists(GOLDEN) and os.path.exists(CONSTRAINED)),
-                    reason="deployed artifacts absent")
+@pytest.mark.skipif(not all(os.path.exists(p) for p in (GOLDEN, GOLDEN_INPUTS, CONSTRAINED)),
+                    reason="deployment bundle absent")
 def test_golden_scoring_regression():
-    """THE system-level skew guard: the canonical DeployedPipeline must
-    reproduce the frozen golden outputs exactly. Any silent drift in the
-    chain (artifacts, casting, calibrator, decision layer, score scale)
-    fails here before it can reach the API or the holdout ceremony."""
-
-    from src.data.load import load_modeling_frame
+    """THE system-level skew guard: the deployed pipeline, loaded from the
+    hash-gated bundle exactly as the API loads it, must reproduce the frozen
+    golden outputs. Runs in CI (inputs ship in artifacts/golden_inputs)."""
     from src.models.pipeline import DeployedPipeline
 
     golden = json.load(open(GOLDEN))
-    dev = load_modeling_frame("dev").set_index("SK_ID_CURR")
-    rows = dev.loc[golden["ids"]].reset_index()
-    out = DeployedPipeline().score_frame(rows)
+    rows = pd.read_parquet(GOLDEN_INPUTS).set_index("SK_ID_CURR").loc[golden["ids"]].reset_index()
+    out = DeployedPipeline.from_artifacts().score_frame(rows)
 
     assert out["decision"].tolist() == golden["decision"]
     assert [round(float(v), 10) for v in out["pd_calibrated"]] == golden["pd_calibrated"]
@@ -136,6 +142,67 @@ def test_golden_scoring_regression():
     assert [round(float(v), 6) for v in out["score_scaled"]] == golden["score_scaled"]
     top1 = [c[0]["feature"] if c else None for c in out["reason_codes"]]
     assert top1 == golden["reason_top1"]
+
+
+def test_manifest_hashes_match_bundle():
+    """The same gate the Docker build runs, in CI: every manifest entry exists
+    and hashes match (a gitignored or stale artifact fails here, not in the
+    image build)."""
+    import hashlib
+
+    m = json.load(open(os.path.join(ARTIFACTS_DIR, "MANIFEST.json")))["sha256"]
+    on_disk = {f for f in os.listdir(ARTIFACTS_DIR) if f != "MANIFEST.json"}
+    assert set(m) == on_disk, f"manifest/bundle mismatch: {set(m) ^ on_disk}"
+    for name, h in m.items():
+        with open(os.path.join(ARTIFACTS_DIR, name), "rb") as f:
+            assert hashlib.sha256(f.read()).hexdigest() == h, f"ARTIFACT DRIFT: {name}"
+
+
+@pytest.mark.skipif(not os.path.exists(os.path.join(MODELS_DIR, "isotonic_final.pkl")),
+                    reason="training outputs absent (fresh clone)")
+def test_training_outputs_equal_deployed_bundle():
+    """Where training outputs exist, the bundle must be a byte copy of them —
+    otherwise offline scripts (models/) and serving (artifacts/) disagree."""
+    import filecmp
+
+    pairs = [(os.path.join(MODELS_DIR, f), f) for f in
+             [*[f"lgbm_constrained_fold{k}.txt" for k in range(5)],
+              "isotonic_final.pkl", "scorecard_folds.pkl"]]
+    pairs += [(os.path.join(DATA_PROCESSED, f), f) for f in
+              ("lgbm_features.json", "categorical_levels.json", "golden_scoring.json")]
+    stale = [b for a, b in pairs
+             if not filecmp.cmp(a, os.path.join(ARTIFACTS_DIR, b), shallow=False)]
+    assert not stale, f"artifacts/ stale vs training outputs — run `make artifacts`: {stale}"
+
+
+@pytest.mark.skipif(not os.path.exists(FEATURES), reason="feature matrix absent")
+def test_input_gate_limits_match_training_data():
+    """The API's training-support gate constants are measured facts about the
+    training matrix, not tuned numbers — and 'history unknown' (all 22
+    aggregates missing) never occurs in training."""
+    feats = json.load(open(os.path.join(ARTIFACTS_DIR, "lgbm_features.json")))["features"]
+    hist = [f for f in feats if f.startswith(HISTORY_FEATURE_PREFIXES)]
+    app = [f for f in feats if f not in hist]
+    m = pd.read_parquet(FEATURES, columns=feats)
+    assert int(m[app].isna().sum(axis=1).max()) == MAX_MISSING_APPLICATION_FEATURES
+    n_hist = m[hist].isna().sum(axis=1)
+    assert int(n_hist.max()) == MAX_MISSING_HISTORY_FEATURES < len(hist)
+    no_hist = m.loc[n_hist == MAX_MISSING_HISTORY_FEATURES, hist]
+    assert sorted(no_hist.columns[no_hist.notna().all()]) == sorted(NO_HISTORY_ZERO_FEATURES)
+    assert (no_hist[NO_HISTORY_ZERO_FEATURES] == 0).all().all()
+
+
+@pytest.mark.skipif(not os.path.exists(FEATURES), reason="feature matrix absent")
+def test_stored_term_years_equals_the_single_definition():
+    """term_years in the training matrix == implied_term_years(...) — the
+    function the API now uses to derive term server-side."""
+    import numpy as np
+
+    from src.features.stateless import implied_term_years
+
+    m = pd.read_parquet(FEATURES, columns=["term_years", "AMT_CREDIT", "AMT_ANNUITY"])
+    t = implied_term_years(m["AMT_CREDIT"], m["AMT_ANNUITY"])
+    assert np.array_equal(t.values, m["term_years"].values, equal_nan=True)
 
 
 # ── Phase 7 ceremony guards ────────────────────────────────────────────────
@@ -190,19 +257,16 @@ def test_all_third_party_imports_are_in_requirements():
     was missing from requirements.txt — the container would have installed
     fine and then crashed on import, taking down the demo deliverable."""
     import ast
+    import sys
 
-    stdlib = set(
-        "json os sys re math time datetime pickle hashlib shutil sqlite3 logging "
-        "argparse subprocess importlib collections itertools functools typing "
-        "pathlib warnings dataclasses tempfile io csv random string base64 "
-        "contextlib copy glob traceback unittest".split())
+    stdlib = set(sys.stdlib_module_names)  # exact for the running interpreter
     local = {"src", "config", "scripts", "app", "tests"}
     alias = {"sklearn": "scikit-learn", "yaml": "pyyaml", "PIL": "pillow"}
-    req = open("requirements.txt").read().lower()
+    req = (open("requirements.txt").read() + open("requirements-dev.txt").read()).lower()
 
     found = set()
     for root, _, files in os.walk("."):
-        if any(s in root for s in (".git", "__pycache__", "notebooks")):
+        if any(s in root for s in (".git", "__pycache__", "notebooks", ".venv", "venv")):
             continue
         for fn in files:
             if not fn.endswith(".py"):
@@ -232,3 +296,24 @@ def test_no_unqualified_euro_claims_in_published_docs():
         if "\u20ac" in text:
             assert ("currency unit" in text.lower()), (
                 f"{doc} uses a currency symbol without the units qualifier")
+
+
+@pytest.mark.skipif(not os.path.exists(CONSTRAINED), reason="deployment bundle absent")
+def test_matrix_fast_path_is_bit_identical_to_pandas_path():
+    """The serving fast path (one float matrix shared by all boosters) must
+    reproduce LightGBM's own pandas-categorical handling exactly — raw
+    scores AND TreeSHAP contributions — or reason codes and PDs drift."""
+    import numpy as np
+
+    from src.features.serving import cast_with_contract
+    from src.models.pipeline import DeployedPipeline
+
+    p = DeployedPipeline.from_artifacts()
+    pool = pd.read_parquet(os.path.join(ARTIFACTS_DIR, "demo_pool.parquet")).head(500)
+    casted, _ = cast_with_contract(pool, p.levels)
+    M = p._matrix(casted)
+    for b in p.boosters:
+        assert np.array_equal(b.predict(M), b.predict(casted[p.features]))
+    b0 = p.boosters[0]
+    assert np.array_equal(b0.predict(M, pred_contrib=True),
+                          b0.predict(casted[p.features], pred_contrib=True))

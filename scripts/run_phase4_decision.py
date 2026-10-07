@@ -89,7 +89,7 @@ def main() -> None:
         [
             {"policy": k, "profit_eur_total": v, "profit_eur_per_10k": v * scale,
              "approval_rate": float(a.mean())}
-            for (k, v), a in zip(profits.items(), [a_naive, a_flat, a_inst])
+            for (k, v), a in zip(profits.items(), [a_naive, a_flat, a_inst], strict=True)
         ]
     )
     comparison.to_csv(os.path.join(TABLES_DIR, "policy_comparison_oof.csv"), index=False)

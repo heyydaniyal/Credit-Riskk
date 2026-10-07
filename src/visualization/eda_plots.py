@@ -286,7 +286,7 @@ def plot_categorical_risk(dev: pd.DataFrame, save: bool = True):
         ax.barh(range(len(grp)), grp["mean"], color="#457b9d")
         ax.set_yticks(range(len(grp)))
         ax.set_yticklabels([f"{i} ({int(c)//1000}k)" for i, c in
-                            zip(grp.index, grp["count"])], fontsize=7)
+                            zip(grp.index, grp["count"], strict=True)], fontsize=7)
         ax.axvline(BASE_RATE, ls="--", color="gray")
         ax.set_xlabel("Default rate")
         ax.set_title(f"Default rate {title}")
@@ -373,7 +373,7 @@ def plot_numeric_distributions(dev: pd.DataFrame, save: bool = True):
         ("EXT_SOURCE_2", False), ("EXT_SOURCE_3", False),
     ]
     fig, axes = plt.subplots(2, 4, figsize=(14, 6))
-    for ax, (col, log) in zip(axes.ravel(), specs):
+    for ax, (col, log) in zip(axes.ravel(), specs, strict=False):
         v = pd.to_numeric(dev[col], errors="coerce").dropna()
         if log:
             v = np.log1p(v)

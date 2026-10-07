@@ -1,0 +1,31 @@
+{
+  "label": "DEVELOPMENT evidence (dev OOF, cross-fitted comparators) \u2014 added after the holdout ceremony; does not revise any pre-registered holdout number",
+  "n_rows": 246008,
+  "distinct_grid_points": 14,
+  "gap_positive_at_every_point": true,
+  "gap_relative_range": [
+    0.016017654634206752,
+    0.10935950128473662
+  ],
+  "frozen_point_gap_relative": 0.05641163387736954,
+  "segmentation_benchmark": {
+    "single flat (cross-fitted)": {
+      "profit_per_10k": 162192093.8517874,
+      "gain_vs_single_flat": 0.0
+    },
+    "flat per contract type (2 thresholds, cross-fitted)": {
+      "profit_per_10k": 165713656.71333557,
+      "gain_vs_single_flat": 0.02171229668424043
+    },
+    "flat per contract \u00d7 cash-term quintile (6, cross-fitted)": {
+      "profit_per_10k": 170540677.44873393,
+      "gain_vs_single_flat": 0.05147343127942812
+    },
+    "instance-dependent t*(x) (no fitting)": {
+      "profit_per_10k": 171341614.86795837,
+      "gain_vs_single_flat": 0.05641163387736954
+    }
+  },
+  "share_of_gain_captured_by_6_segment_policy": 0.9124612733487505,
+  "reading": "most of the gain is term/contract segmentation; the closed-form t*(x) still beats a fitted segment policy without fitting anything"
+}

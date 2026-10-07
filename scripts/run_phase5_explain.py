@@ -4,7 +4,9 @@ import json
 import logging
 import os
 import sys
+
 import matplotlib
+
 matplotlib.use("Agg")
 import lightgbm as lgb
 import matplotlib.pyplot as plt
@@ -57,6 +59,6 @@ hi = oofc.nlargest(5, "p_cal_crossfit").merge(dev, on=["SK_ID_CURR","fold","TARG
 codes = reason_codes(b, hi, feats, top_k=3)
 demo = [{"SK_ID_CURR": int(r.SK_ID_CURR), "p_cal": float(r.p_cal_crossfit),
          "score": float(pd_to_score(np.array([r.p_cal_crossfit]))[0]),
-         "reason_codes": c} for r, c in zip(hi.itertuples(), codes)]
+         "reason_codes": c} for r, c in zip(hi.itertuples(), codes, strict=True)]
 json.dump(demo, open(os.path.join(TABLES_DIR, "reason_codes_demo.json"), "w"), indent=2)
 log.info("explain artifacts written: beeswarm, top30 table, reason-code demo")

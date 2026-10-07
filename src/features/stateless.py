@@ -13,6 +13,8 @@ selection.py / woe.py as fit/transform classes instead.
 import numpy as np
 import pandas as pd
 
+from config.constants import TERM_YEARS_MAX, TERM_YEARS_MIN
+
 # Home Credit uses this placeholder for pensioners (no employment record)
 SENTINEL_DAYS_EMPLOYED = 365243
 
@@ -55,6 +57,20 @@ def _safe_div(num: pd.Series, den: pd.Series) -> pd.Series:
     return num / den
 
 
+def implied_term_years(amt_credit: pd.Series, amt_annuity: pd.Series) -> pd.Series:
+    """
+    term = AMT_CREDIT / (12 × AMT_ANNUITY), capped [0.5, 7] years.
+
+    Zero-interest approximation (spec 4c): slightly understates term and so
+    keeps m(x) conservative. NaN when the annuity is missing or zero — the
+    frozen term-fallback rule is a decision-layer concern. Single
+    definition: feature building AND the API (which derives term
+    server-side rather than trusting a client-supplied value) call this.
+    """
+    return _safe_div(amt_credit, 12.0 * amt_annuity).clip(lower=TERM_YEARS_MIN,
+                                                          upper=TERM_YEARS_MAX)
+
+
 def add_domain_ratios(df: pd.DataFrame) -> pd.DataFrame:
     """
     Credit-officer features.  One line per feature on why an underwriter cares:
@@ -91,8 +107,7 @@ def add_domain_ratios(df: pd.DataFrame) -> pd.DataFrame:
     out["employment_years"] = -out["DAYS_EMPLOYED"] / 365.25
 
     # Cost-model input (spec Phase 4c): term = AMT_CREDIT / (12 × AMT_ANNUITY)
-    term = _safe_div(out["AMT_CREDIT"], 12.0 * out["AMT_ANNUITY"])
-    out["term_years"] = term.clip(lower=0.5, upper=7.0)
+    out["term_years"] = implied_term_years(out["AMT_CREDIT"], out["AMT_ANNUITY"])
 
     ext = out[["EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"]]
     out["ext_source_mean"] = ext.mean(axis=1)

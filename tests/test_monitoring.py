@@ -118,3 +118,26 @@ def test_request_log_stores_no_pii():
         "SELECT features_json, p_cal, decision FROM requests").fetchone()
     assert row[0] is None            # no features persisted
     assert row[1] == 0.1 and row[2] == "APPROVE"   # monitoring signals present
+
+
+def test_request_log_roundtrip_and_rolling_series(tmp_path):
+    """log_request → read_log: the live decision-drift series the monitoring
+    tab plots (rolling approval rate, rolling mean t*)."""
+    from src.monitoring import log_request, read_log
+
+    db = str(tmp_path / "log.sqlite")
+    assert read_log(db).empty
+    for i, (thr, dec) in enumerate([(0.10, "APPROVE"), (0.20, "REJECT"),
+                                    (0.30, "APPROVE"), (0.40, "APPROVE")]):
+        log_request({}, 0.01 * i, 0.01 * i, thr, dec, db_path=db)
+    log = read_log(db, window=2)
+    assert len(log) == 4
+    assert log.rolling_approval_rate.tolist() == [1.0, 0.5, 0.5, 1.0]
+    assert np.allclose(log.rolling_mean_t_star, [0.10, 0.15, 0.25, 0.35])
+
+
+def test_tests_do_not_write_the_service_request_log():
+    from config.constants import REQUEST_LOG_DB
+    from src.monitoring import log_db_path
+
+    assert log_db_path() != REQUEST_LOG_DB

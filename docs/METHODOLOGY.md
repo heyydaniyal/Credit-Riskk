@@ -4,7 +4,9 @@ Derivations, diagnostics, and the evaluation discipline behind every number in t
 
 ---
 
-## 1. The decision rule: `t*(x) = m(x) / (m(x) + LGD(x)·EAD(x))`
+## 1. The decision rule
+
+`t*(x) = m(x) / (m(x) + LGD(x)·EAD(x))`
 
 ### Derivation (Elkan, IJCAI 2001, instance-dependent form)
 
@@ -36,7 +38,7 @@ p  <  m(x) / ( m(x) + LGD(x)·ead(x) )  ≡  t*(x)
 
 **The consequence for the cost model (the single largest uncertainty in the decision engine).** The decision rule multiplies this early-delinquency PD by `LGD = 0.70` and `EAD = 0.85` — which are **charge-off** severities. The two refer to different events, and Elkan's framework requires them to refer to the same one. Early delinquencies cure at high rates in consumer lending; every cured borrower is charged the full `LGD·EAD·A` in the as-built ledger and denied the margin they in fact paid, so the false-negative cost is systematically overstated and thresholds systematically too strict.
 
-We now expose this as an explicit `CURE_RATE` axis in the frozen sensitivity grid, and its effect **dominates every other cost parameter**:
+`CURE_RATE` is now an implemented axis of the cost model (`attach_cost_params(..., overrides={"cure_rate": c})`, also a bounded `/score` override and a demo slider): effective loss = `(1−c)·LGD·EAD`, cured borrowers booked at zero (conservative — they earn no margin), so `t* = m / (m + (1−c)·LGD·EAD)`. Its effect on the threshold **dominates every other cost parameter**:
 
 | Assumption | effective L = LGD·EAD·(1−cure) | t*(3y cash) | shift |
 |---|---|---|---|
@@ -45,6 +47,8 @@ We now expose this as an explicit `CURE_RATE` axis in the frozen sensitivity gri
 | 50% cure | 0.297 | 0.2013 | **+80%** |
 
 For comparison, moving LGD across its entire frozen grid (±0.10) shifts the same anchor by only **±13%**. The dominant uncertainty in the centerpiece is therefore not a parameter *value* — it is the *event definition*, and it was outside the original sensitivity analysis. The deployed path keeps `CURE_RATE = 0` (preserving every published number), but the honest reading is that a bank would estimate this cure rate from internal data and it would move thresholds more than any LGD/EAD/margin choice in the grid.
+
+**What it does to the gap (development data, added after the holdout):** sweeping the cure rate on dev OOF with cross-fitted flat competitors, the instance-vs-best-flat gain falls from **5.64%** (c = 0) to **2.90%** (c = 0.3) and **1.60%** (c = 0.5) — the largest compression of any axis (§7, *Robustness*). The gain stays positive, but its size depends more on what `TARGET` measures than on any frozen constant. Because this axis was added after the ceremony, it is development evidence only; no holdout number is revised.
 
 ### The two traps, both closed
 
@@ -173,7 +177,7 @@ Framed as **inspired by** adverse-action and governance practice (ECOA/Reg B, GD
 
 ---
 
-## 6. The holdout ceremony — results and consistency
+## 7. The holdout ceremony — results and consistency
 
 Run once, by script, on the 61,503-row holdout, with a label-free pre-flight gate, a run-once guard, and automatic checking against bands pre-registered from dev-only bootstraps.
 
@@ -190,13 +194,17 @@ Run once, by script, on the 61,503-row holdout, with a label-free pre-flight gat
 
 **One pre-registered expectation was not confirmed, and that is reported rather than quietly dropped.** The asymmetry argument (best-flat carries one dev-fitted parameter, the instance rule carries zero) predicted the holdout gap would land slightly *above* the dev point. It landed *below* — 3.67% vs 5.28%, inside the magnitude band but contrary to the predicted direction. The honest reading: sampling variation in the gap (band width 3.7 points) swamps the small selection-bias effect that argument identified, so the directional prediction was under-powered. Magnitude confirmed, direction not.
 
-**Robustness.** Across all 12 frozen sensitivity grid points, the gap stays positive (2.27%–6.11%), so the conclusion does not hinge on any single assumed constant. The largest sensitivity is to the revolving multiplier — expected, since revolving carries the most distinct threshold.
+**Robustness — as run, and as corrected.** The ceremony's sensitivity table reports a positive gap at every row it computed. Three defects in that table were found in the October 2026 review and are disclosed rather than re-run (the holdout is spent): (1) it sweeps **4 of the 6** frozen grids (LGD_revolving and ead_revolving were omitted); (2) its central point appears four times, so "12 grid points" are **9 distinct** ones; (3) at every row it re-selects the best flat threshold **on the holdout** (0.085 at the frozen point), whereas the headline uses the dev-frozen 0.08 — which is why its central row (5.92M CU/10k) does not reconcile with the headline (6.04M). Point (3) makes every row *conservative* for the instance rule (an oracle flat threshold is the stronger competitor), so the sign of the conclusion is unaffected.
+
+The complete sweep — all six grids **plus the cure-rate axis**, with every flat competitor **cross-fitted** (threshold chosen on four folds, scored on the fifth) — is run on development data by `make sensitivity-dev` (`reports/tables/sensitivity_dev_full.*`, figure 46). The gain is positive at **all 14 distinct points, 1.60%–10.94%**; it is most sensitive to the cash net margin (2.1% at r = 8%, 10.9% at r = 3%) and to the cure rate (1.6% at c = 0.5). These are development numbers, labelled as such.
+
+**How much of the gain is segmentation?** (Same script, development data.) A fitted flat-threshold policy with one cross-fitted threshold per segment — revolving, plus cash loans in five term quintiles — gains **+5.15%** over a single flat threshold; per contract type alone, **+2.17%**; the closed-form `t*(x)`, **+5.64%** with nothing fitted. About **91%** of the instance-dependent gain is therefore term-and-contract segmentation, and the cost formula captures it without fitting a parameter — and still edges out the fitted 6-threshold competitor.
 
 **Swap-set vs naive 0.5.** The 22,916 applicants the instance policy rejects that a 0.5 threshold would approve default at **15.0%** — roughly double the book's 8.1% base rate. The 261 rejected by both default at 62.8%. The decision layer is separating real risk, not reshuffling noise.
 
 ---
 
-## 7. Reject inference (a stated limitation, not a solved problem)
+## 8. Reject inference (a stated limitation, not a solved problem)
 
 Every model here is trained on **accepted applicants only**. Home Credit's data contains applications that were approved and subsequently observed; the population the model would actually score in production is the full **through-the-door** population, including applicants a prior policy rejected — whose outcomes are unobserved by construction.
 
@@ -206,7 +214,7 @@ Every model here is trained on **accepted applicants only**. Home Credit's data 
 
 ---
 
-## 8. What a real bank does differently
+## 9. What a real bank does differently
 
 - **PD is one model of three.** Basel IRB decomposes expected loss as PD × LGD × EAD; LGD and EAD are separately modeled on internal recovery and exposure data. Here they are constants, sitting exactly where those models would attach.
 - **Margins come from a pricing engine,** not a single net-rate assumption — risk-based pricing means the margin is itself a function of the score, making the threshold problem simultaneous rather than sequential.

@@ -19,8 +19,8 @@ from src.features.aggregations import (
     aggregate_previous_application,
     join_aggregates,
 )
-from src.features.stateless import SENTINEL_DAYS_EMPLOYED, apply_all_stateless
 from src.features.selection import CorrelationDropper, NearConstantDropper
+from src.features.stateless import SENTINEL_DAYS_EMPLOYED, apply_all_stateless
 from src.features.woe import WOEBinner
 
 

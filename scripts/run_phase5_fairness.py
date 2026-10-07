@@ -129,7 +129,7 @@ def main() -> None:
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     for g, color in [("F", "#2b6cb0"), ("M", "#e53e3e")]:
-        axes[0].hist(d.loc[d.CODE_GENDER == g, "t_star"], bins=60, alpha=0.55,
+        axes[0].hist(d.loc[g == d.CODE_GENDER, "t_star"], bins=60, alpha=0.55,
                      density=True, color=color, label=g)
     axes[0].set_title("t*(x) distribution by gender\n(policy-level check the "
                       "instance rule creates)")

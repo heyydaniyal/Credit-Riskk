@@ -1,0 +1,24 @@
+# Tool configuration only (the project is not packaged).
+
+[tool.pytest.ini_options]
+# Make `pytest` and `python -m pytest` behave identically: the repo root is
+# importable either way (CI previously relied on one test file's sys.path hack).
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+# Pinned in requirements-dev.txt; rule set made explicit so a ruff upgrade
+# cannot silently change what "lint-clean" means.
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+ignore = [
+    "E501",   # long lines: docstrings and prose-heavy reporting strings
+    "SIM115", # open() without a context manager in short-lived scripts
+    "B008",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "config"]

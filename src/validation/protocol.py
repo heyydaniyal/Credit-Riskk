@@ -9,19 +9,18 @@ Everything downstream depends on getting this right.
 - Pipeline-integrity check (dev vs. holdout distinguishability → leak detector).
 """
 
+import logging
+import os
+import sys
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split, StratifiedKFold
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
-import logging
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
-import sys
-import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-from config.constants import (
-    RANDOM_STATE, N_FOLDS, TEST_SIZE, TARGET_COL, ID_COL
-)
+from config.constants import ID_COL, N_FOLDS, RANDOM_STATE, TARGET_COL, TEST_SIZE
 
 logger = logging.getLogger(__name__)
 

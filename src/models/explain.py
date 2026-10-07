@@ -91,7 +91,7 @@ BIAS_COL = -1  # pred_contrib's last column is the bias term
 
 
 def reason_codes(
-    booster, X: pd.DataFrame, feature_names: list[str], top_k: int = 3
+    booster, X: pd.DataFrame | np.ndarray, feature_names: list[str], top_k: int = 3
 ) -> list[list[dict]]:
     """
     Top-k adverse reason codes per row from exact TreeSHAP (pred_contrib).
@@ -100,8 +100,12 @@ def reason_codes(
     sorted by descending positive contribution to the default log-odds.
     Rows with fewer than k positive contributions return fewer codes
     (an applicant pushed DOWN by everything has no adverse reasons).
+
+    X may be a DataFrame (columns selected by name) or the pipeline's
+    precomputed float matrix, already in feature_names order.
     """
-    contrib = booster.predict(X[feature_names], pred_contrib=True)[:, :BIAS_COL]
+    data = X if isinstance(X, np.ndarray) else X[feature_names]
+    contrib = booster.predict(data, pred_contrib=True)[:, :BIAS_COL]
     out = []
     for row in contrib:
         order = np.argsort(-row)

@@ -1,0 +1,10 @@
+data/
+models/
+reports/
+notebooks/
+.git/
+.github/
+**/__pycache__/
+.ruff_cache/
+.pytest_cache/
+*.ipynb

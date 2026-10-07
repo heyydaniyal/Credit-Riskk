@@ -4,6 +4,7 @@
     "categorical_levels.json": "5781f54541ab3a1f2b17944e3c89c0bdcc81d8b2b34f6793d2109c9551b6526b",
     "demo_pool.parquet": "bb4c1b4af8889e784a2d0b7c18361e870f654286722a85775c4c090a32dedaec",
     "feature_manifest.csv": "47b192292f227536a552a493205eb309fe28a2db7bda2315b198ed30fdcb4754",
+    "golden_inputs.parquet": "362277e8cff6e8aa0ccbcc0be0ec440ac91e3909c3f5c84dd25e1f281c0436d9",
     "golden_scoring.json": "ad523cbc5ca44f260b3a092c2777109bc05e1b7ef87c41d4803cff1e502ae09c",
     "isotonic_final.pkl": "b995b0f40c9cbb044feba738971973ffc0ec5f219f453dc1a0c2710758951ed3",
     "lgbm_constrained_fold0.txt": "07e67f9152a4a0e22b64d50643006e926d70ebbf79d6d1576ff0ba0b3055c125",

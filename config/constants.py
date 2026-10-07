@@ -19,6 +19,13 @@ DATA_PROCESSED = os.path.join(PROJECT_ROOT, "data", "processed")
 DATA_SPLITS = os.path.join(PROJECT_ROOT, "data", "splits")
 MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
 
+# The hash-gated deployment bundle (scripts/build_artifacts.py writes it,
+# artifacts/MANIFEST.json pins it). SERVING (API, demo) loads ONLY from here,
+# so what is tested in CI, what the image verifies and what serves are the
+# same bytes. Training scripts keep writing to models/ + data/processed/.
+ARTIFACTS_DIR = os.path.join(PROJECT_ROOT, "artifacts")
+REQUEST_LOG_DB = os.path.join(PROJECT_ROOT, "data", "request_log.sqlite")
+
 # All generated outputs live under reports/ — never inside notebooks/ or src/
 REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports")
 FIGURES_DIR = os.path.join(REPORTS_DIR, "figures")
@@ -106,9 +113,31 @@ SENSITIVITY_M_REVOLVING = [0.10, 0.18, 0.30]
 CURE_RATE = 0.0
 SENSITIVITY_CURE_RATE = [0.0, 0.30, 0.50]
 
-# ── PSI monitoring thresholds ──────────────────────────────────────────────
-PSI_STABLE = 0.10
-PSI_INVESTIGATE = 0.25
+# ── PSI monitoring thresholds (Siddiqi 2006) ──────────────────────────────
+# < 0.10 stable · 0.10-0.25 investigate · > 0.25 retrain trigger.
+# Single definition: src/monitoring imports these (previously defined in
+# three places, one of them with the names shifted by a band).
+PSI_INVESTIGATE = 0.10
+PSI_RETRAIN = 0.25
+
+# ── Serving input gate (training support, measured — not tuned) ─────────────
+# Measured on the full 307,511-row feature matrix, per block of the 58 model
+# features:
+#   application-side (36 features): at most 12 missing in any row
+#   credit history (22 bureau_*/prev_* aggregates): at most 16 missing —
+#     a no-history applicant has 16 NaN aggregates and 6 count/sum
+#     aggregates equal to 0 (NO_HISTORY_ZERO_FEATURES); NO training row has
+#     all 22 missing, i.e. "history unknown" never occurred in training.
+# A request beyond either limit is outside the training support. LightGBM
+# would still route it down NaN branches and return a confident-looking PD
+# (review probe: AMT_CREDIT + contract type only → APPROVE at PD 2.2%), so
+# the API refuses it. Verified against the matrix by
+# tests/test_artifacts.py::test_input_gate_limits_match_training_data.
+HISTORY_FEATURE_PREFIXES = ("bureau_", "prev_")
+MAX_MISSING_APPLICATION_FEATURES = 12
+MAX_MISSING_HISTORY_FEATURES = 16
+NO_HISTORY_ZERO_FEATURES = ["bureau_credit_sum", "bureau_n_active", "bureau_limit_sum",
+                            "bureau_n_card", "prev_n_approved", "prev_n_refused"]
 
 # ── Fairness ───────────────────────────────────────────────────────────────
 PROTECTED_ATTRIBUTE = "CODE_GENDER"

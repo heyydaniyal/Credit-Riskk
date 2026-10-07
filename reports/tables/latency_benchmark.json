@@ -3,5 +3,20 @@
   "clean_p95_ms": 68.01410734997262,
   "no_reason_codes_p95_ms": 46.45854245000578,
   "contaminated_reading_p95_ms": 142.9,
-  "lesson": "the first Phase 6 benchmark and this one agree; the 143ms reading was taken while a LightGBM training job saturated the single CPU \u2014 benchmarks must be run on an idle machine, and a contended reading is a load artifact, not a regression"
+  "lesson": "the first Phase 6 benchmark and this one agree; the 143ms reading was taken while a LightGBM training job saturated the single CPU \u2014 benchmarks must be run on an idle machine, and a contended reading is a load artifact, not a regression",
+  "october_2026_review": {
+    "what_changed": "one float matrix per request shared by the 5 fold models and the reason-code pass (LightGBM's per-call pandas conversion was >50% of single-row time); bit-identical outputs (test_matrix_fast_path_is_bit_identical_to_pandas_path, golden tests, 61,503-row holdout rescore max |diff| = 0.0)",
+    "same_machine_comparison_http_single_row_with_reason_codes_ms": {
+      "machine": "2-vCPU cloud sandbox, client on the same host, 300 sequential requests after 20 warm-up",
+      "before": {
+        "p50": 127.8,
+        "p95": 170.4
+      },
+      "after": {
+        "p50": 86.3,
+        "p95": 118.9
+      }
+    },
+    "reading": "~30% lower on identical hardware. Absolute latency is hardware-dependent: the 68 ms p95 above was measured on a different idle machine and is not comparable to this box; re-measure on the deployment host before quoting a number."
+  }
 }

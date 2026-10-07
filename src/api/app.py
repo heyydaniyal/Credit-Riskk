@@ -11,64 +11,76 @@ Frozen-design decisions implemented here:
   strict rejection.
 - hand-written range checks on the top SHAP features: reject only the
   impossible (negative amounts, EXT_SOURCE outside [0,1]).
+- extra fields are FORBIDDEN (422): a protected attribute such as
+  CODE_GENDER cannot even reach the scoring path.
+- derived features are recomputed from their sources and a contradicting
+  value is rejected (serving.derive_and_check) — term_years in particular,
+  which drives both the PD and t*(x).
+- training-support gate: more missing application-side or credit-history
+  features than any training row had → 422, not a confident low PD.
 - /score accepts optional cost_overrides BOUNDED BY THE FROZEN SENSITIVITY
   GRIDS — the demo can explore sensitivity, never invent economics.
 - every input to the decision is returned; cost params labeled illustrative.
 - log_request() writes to SQLite for the monitoring tab.
 """
 
+import hashlib
 import os
 import sys
 
-import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, ConfigDict, create_model
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from src.models.decision import EAD_FACTOR, LGD, M_REVOLVING, R_NET_CASH
-from src.models.pipeline import DeployedPipeline
-from src.monitoring import init_log, log_request
+from config.constants import (  # noqa: E402
+    ARTIFACTS_DIR,
+    HISTORY_FEATURE_PREFIXES,
+    MAX_MISSING_APPLICATION_FEATURES,
+    MAX_MISSING_HISTORY_FEATURES,
+)
+from src.features.serving import derive_and_check  # noqa: E402
+from src.models.decision import LGD, OVERRIDE_BOUNDS  # noqa: E402
+from src.models.pipeline import DeployedPipeline  # noqa: E402
+from src.monitoring import init_log, log_request  # noqa: E402
 
-# ── load once at startup ───────────────────────────────────────────────────
-
+# ── load once at startup (from the hash-gated bundle) ───────────────────────
 # Model provenance: hash of the artifact manifest, so every scored decision
 # can be tied to the exact model build that produced it (F1.9/F9.3).
-import hashlib as _hashlib
 try:
-    _manifest_txt = open(os.path.join("artifacts", "MANIFEST.json")).read()
-    MODEL_VERSION = _hashlib.sha256(_manifest_txt.encode()).hexdigest()[:12]
+    with open(os.path.join(ARTIFACTS_DIR, "MANIFEST.json")) as _f:
+        MODEL_VERSION = hashlib.sha256(_f.read().encode()).hexdigest()[:12]
 except FileNotFoundError:
     MODEL_VERSION = "unversioned"
 
-PIPE = DeployedPipeline()
+PIPE = DeployedPipeline.from_artifacts()
 CATS = set(PIPE.levels)
 API_FIELDS = list(dict.fromkeys(PIPE.features
                                 + ["NAME_CONTRACT_TYPE", "term_years", "AMT_CREDIT"]))
 
 _fields = {f: ((str | None), None) if f in CATS else ((float | None), None)
            for f in API_FIELDS}
+HIST_FEATURES = [f for f in PIPE.features if f.startswith(HISTORY_FEATURE_PREFIXES)]
+APP_FEATURES = [f for f in PIPE.features if f not in HIST_FEATURES]
 
-# frozen sensitivity grids — the ONLY admissible override ranges
-OVERRIDE_BOUNDS = {
-    "lgd_cash": (0.60, 0.80), "lgd_revolving": (0.75, 0.95),
-    "ead_cash": (0.75, 0.95), "ead_revolving": (0.85, 1.00),
-    "r_net_cash": (0.03, 0.08), "m_revolving": (0.10, 0.30),
-}
+_STRICT = ConfigDict(extra="forbid")
 
 
 class CostOverrides(BaseModel):
+    """Bounded by the frozen sensitivity grids (decision.OVERRIDE_BOUNDS)."""
+    model_config = _STRICT
     lgd_cash: float | None = None
     lgd_revolving: float | None = None
     ead_cash: float | None = None
     ead_revolving: float | None = None
     r_net_cash: float | None = None
     m_revolving: float | None = None
+    cure_rate: float | None = None
 
 
 # single flat body: 59 feature fields + optional nested cost_overrides
-ScoreRequest = create_model("ScoreRequest",
+ScoreRequest = create_model("ScoreRequest", __config__=_STRICT,
                             cost_overrides=(CostOverrides | None, None), **_fields)
 
 
@@ -84,13 +96,10 @@ def _sanity(row: dict) -> None:
         v = row.get(f)
         if v is not None and v < 0:
             raise HTTPException(422, f"{f} must be non-negative, got {v}")
-    if row.get("AMT_CREDIT") in (None,):
+    if row.get("AMT_CREDIT") is None:
         raise HTTPException(422, "AMT_CREDIT is required (decision-layer input)")
 
     # Decision-layer pre-flight (ports the ceremony's guard into serving).
-    # These two fields DRIVE t*(x); an unhandled bad value here yields either a
-    # 500 (NaN cost params -> non-JSON-compliant response) or, worse, a valid
-    # 200 with a nonsensical threshold. Validate them explicitly.
     ct = row.get("NAME_CONTRACT_TYPE")
     if ct is None:
         raise HTTPException(422, "NAME_CONTRACT_TYPE is required (drives LGD/EAD/threshold)")
@@ -98,33 +107,25 @@ def _sanity(row: dict) -> None:
         raise HTTPException(
             422, f"NAME_CONTRACT_TYPE '{ct}' is not a scored product "
                  f"(known: {sorted(LGD)}); cost parameters would be undefined")
-    term = row.get("term_years")
-    if term is not None and term <= 0:
-        raise HTTPException(422, f"term_years must be positive when provided, got {term}")
 
 
-def _apply_overrides(cost_df: pd.DataFrame, ov: CostOverrides) -> tuple[pd.DataFrame, dict]:
-    used = {}
-    d = cost_df.copy()
-    cash = (d["NAME_CONTRACT_TYPE"].astype(str) == "Cash loans").values
-    for name, val in ov.model_dump().items():
-        if val is None:
-            continue
-        lo, hi = OVERRIDE_BOUNDS[name]
-        if not (lo <= val <= hi):
+def _gate(row: dict) -> dict:
+    """Consistency + minimum-information gate. Returns the row to score."""
+    row, problems = derive_and_check(row)
+    if problems:
+        raise HTTPException(422, "inconsistent derived features (they are recomputed "
+                                 "server-side from their sources): " + "; ".join(problems))
+    for block, feats, limit in (("application-side", APP_FEATURES, MAX_MISSING_APPLICATION_FEATURES),
+                                ("credit-history", HIST_FEATURES, MAX_MISSING_HISTORY_FEATURES)):
+        n_missing = sum(row.get(f) is None for f in feats)
+        if n_missing > limit:
             raise HTTPException(
-                422, f"{name}={val} outside the frozen sensitivity grid [{lo}, {hi}]")
-        used[name] = val
-    lgd = np.where(cash, used.get("lgd_cash", LGD["Cash loans"]),
-                   used.get("lgd_revolving", LGD["Revolving loans"]))
-    ead = np.where(cash, used.get("ead_cash", EAD_FACTOR["Cash loans"]),
-                   used.get("ead_revolving", EAD_FACTOR["Revolving loans"]))
-    m = np.where(cash,
-                 used.get("r_net_cash", R_NET_CASH) * d["term_years_eff"].values / 2,
-                 used.get("m_revolving", M_REVOLVING))
-    d["lgd"], d["ead_factor"], d["margin"] = lgd, ead, m
-    d["t_star"] = m / (m + lgd * ead)
-    return d, used
+                422, f"{n_missing} of {len(feats)} {block} features missing; no training "
+                     f"applicant had more than {limit}. Refusing to score an input outside "
+                     "the training support"
+                     + (" (a no-history applicant has zero-valued count aggregates, "
+                        "not missing ones)" if block == "credit-history" else "") + ".")
+    return row
 
 
 app = FastAPI(title="Credit Risk Scoring Service",
@@ -139,58 +140,55 @@ def health():
             "n_features": len(PIPE.features), "model_version": MODEL_VERSION}
 
 
+@app.get("/cost-bounds")
+def cost_bounds():
+    """The admissible override ranges (= frozen sensitivity-grid spans)."""
+    return {"bounds": OVERRIDE_BOUNDS,
+            "note": "illustrative economic assumptions — explore sensitivity only"}
+
+
 @app.post("/score")
 def score(req: ScoreRequest):
     row = req.model_dump()
-    overrides = req.cost_overrides
-    row.pop("cost_overrides", None)
+    overrides = row.pop("cost_overrides", None)
     _sanity(row)
+    row = _gate(row)
     df = pd.DataFrame([row])
     for f in API_FIELDS:  # JSON null → NaN for numerics
         if f not in CATS:
             df[f] = pd.to_numeric(df[f], errors="coerce")
 
     try:
-        out = PIPE.score_frame(df, with_reason_codes=True)
+        out = PIPE.score_frame(df, with_reason_codes=True, cost_overrides=overrides)
+    except ValueError as e:  # override outside the frozen grid
+        raise HTTPException(422, str(e)) from e
     except Exception as _e:  # noqa: BLE001 - surface a clean error, not a stack trace
         raise HTTPException(500, f"scoring failed: {type(_e).__name__}") from _e
     r = out.iloc[0]
-    threshold, lgd, ead, margin = (r.threshold_applied, r.lgd_used,
-                                   r.ead_factor_used, r.margin_used)
-    decision = r.decision
-    overrides_used = {}
-    if overrides is not None and any(v is not None
-                                     for v in overrides.model_dump().values()):
-        from src.models.decision import attach_cost_params
+    threshold = float(r.threshold_applied)
 
-        base = attach_cost_params(df)
-        cost2, overrides_used = _apply_overrides(base, overrides)
-        threshold = float(cost2["t_star"].iloc[0])
-        lgd, ead, margin = (float(cost2["lgd"].iloc[0]),
-                            float(cost2["ead_factor"].iloc[0]),
-                            float(cost2["margin"].iloc[0]))
-        decision = "APPROVE" if r.pd_calibrated < threshold else "REJECT"
+    # Invariant: a threshold outside (0,1) is never a valid decision.
+    if not (0.0 < threshold < 1.0):
+        raise HTTPException(422, f"computed threshold {threshold:.4f} is outside (0,1)")
 
-    # Invariant: a threshold outside (0,1) is never a valid decision. This
-    # catches any residual path (e.g. override arithmetic) that _sanity missed.
-    if not (0.0 < float(threshold) < 1.0):
-        raise HTTPException(422, f"computed threshold {threshold:.4f} is outside (0,1); "
-                                 "check term_years and cost_overrides")
-
+    overrides_used = {k: v for k, v in (overrides or {}).items() if v is not None}
     log_request(row, float(r.pd_raw_ensemble), float(r.pd_calibrated),
-                float(threshold), str(decision))
+                threshold, str(r.decision))
     return {
         "pd_calibrated": float(r.pd_calibrated),
-        "decision": str(decision),
-        "threshold_applied": float(threshold),
-        "lgd_used": float(lgd),
-        "ead_factor_used": float(ead),
-        "margin_used": float(margin),
+        "decision": str(r.decision),
+        "threshold_applied": threshold,
+        "lgd_used": float(r.lgd_used),
+        "ead_factor_used": float(r.ead_factor_used),
+        "margin_used": float(r.margin_used),
+        "cure_rate_used": float(r.cure_rate_used),
+        "term_years_used": float(r.term_years_used),
         "term_fallback_used": bool(r.term_fallback_used),
         "reason_codes": r.reason_codes,
         "score_scaled": float(r.score_scaled),
         "unseen_category_counts": out.attrs.get("unseen_category_counts", {}),
         "cost_overrides_used": overrides_used,
         "model_version": MODEL_VERSION,
-        "note": "cost parameters are illustrative economic assumptions; monetary amounts are in the dataset's unspecified currency units, not euros",
+        "note": "cost parameters are illustrative economic assumptions; monetary amounts "
+                "are in the dataset's unspecified currency units, not euros",
     }

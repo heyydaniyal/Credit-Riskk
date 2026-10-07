@@ -32,13 +32,16 @@ from config.constants import DATA_PROCESSED, ID_COL, TABLES_DIR, TARGET_COL
 from src.data.load import load_modeling_frame
 from src.models.calibration import brier, ece_and_reliability
 from src.models.decision import (
+    EAD_FACTOR,
+    LGD,
+    M_REVOLVING,
+    R_NET_CASH,
     attach_cost_params,
     flat_policy,
     instance_policy,
     realized_profit,
     swap_set,
 )
-from src.models.decision import LGD, EAD_FACTOR, M_REVOLVING, R_NET_CASH
 from src.models.pipeline import DeployedPipeline
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -79,7 +82,20 @@ def preflight(frame: pd.DataFrame) -> dict:
 
 
 def sensitivity_rows(d: pd.DataFrame, p: np.ndarray, y: np.ndarray) -> list[dict]:
-    """Frozen grids (spec 4c): recompute gap + vs-naive per grid point."""
+    """Frozen grids (spec 4c): recompute gap + vs-naive per grid point.
+
+    DISCLOSED (October 2026 review; the ceremony is spent and is NOT re-run):
+    (1) at every grid point the best flat threshold below is re-selected ON
+        THE HOLDOUT (an oracle), unlike the headline, which uses the
+        dev-frozen 0.08 — so the central row (5.92M / 10k, oracle flat
+        0.085) does not equal the headline (6.04M / 10k). The oracle is the
+        STRONGER competitor, so every row here is conservative for t*(x).
+    (2) only 4 of the 6 frozen grids are swept, and the central point
+        appears four times (9 distinct points, not 12).
+    The complete sweep — all six grids + the cure-rate axis, with
+    cross-fitted (non-oracle) flat competitors — is development evidence in
+    scripts/run_sensitivity_dev.py → reports/tables/sensitivity_dev_full.*.
+    """
     grids = {
         "LGD_cash": [0.60, 0.70, 0.80],
         "r_net_cash": [0.03, 0.05, 0.08],

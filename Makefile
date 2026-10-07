@@ -1,7 +1,12 @@
 # Credit Risk Scoring System — phase targets
 # Phases must run in order; do not start a phase before its predecessor's checkpoint passes.
 
-.PHONY: phase0 eda test lint features final-pipeline holdout-ceremony
+.PHONY: install phase0 eda test lint check features features-resume scorecard tune \
+        model-final calibrate decision final-pipeline explain fairness sensitivity-dev \
+        serve demo artifacts docker-build docker-run ceremony-dry-run holdout-ceremony notebooks
+
+install:
+	pip install -r requirements-dev.txt
 
 phase0:
 	python3 scripts/run_phase0.py
@@ -10,10 +15,12 @@ eda:
 	python3 scripts/run_eda.py
 
 test:
-	python3 -m pytest tests/ -v
+	python3 -m pytest -v -rs
 
 lint:
-	ruff check src/ tests/ scripts/ config/
+	ruff check src/ tests/ scripts/ config/ app/
+
+check: lint test
 
 # ── Phase 2: feature engineering (staged, restartable) ────────────
 # null-importance runs are checkpointed: re-run `make features` until
@@ -56,6 +63,12 @@ explain:
 fairness:
 	python3 scripts/run_phase5_fairness.py
 
+# Post-holdout sensitivity analysis on DEVELOPMENT data only (all six frozen
+# grids + the cure-rate axis + a fitted segment-policy benchmark). Never
+# touches the holdout; results are labelled as development evidence.
+sensitivity-dev:
+	python3 scripts/run_sensitivity_dev.py
+
 # ── Phase 6: deployment + monitoring ─────────────────────────────
 serve:
 	python3 -m uvicorn src.api.app:app --host 0.0.0.0 --port 8008
@@ -63,6 +76,7 @@ serve:
 demo:
 	python3 -m streamlit run app/streamlit_app.py
 
+# rebuild the hash-gated serving bundle from training outputs; then `make test`
 artifacts:
 	python3 scripts/build_artifacts.py
 
@@ -70,7 +84,7 @@ docker-build:
 	docker build -t credit-risk:latest .
 
 docker-run:
-	docker run -p 8501:8501 credit-risk:latest
+	docker run -p 8501:7860 credit-risk:latest   # open http://localhost:8501
 
 # ── Phase 7: the one-shot holdout evaluation ──────────────────────
 ceremony-dry-run:
@@ -82,4 +96,6 @@ holdout-ceremony:
 notebooks:
 	python3 scripts/build_notebooks.py
 	python3 scripts/build_notebook_02.py
+	python3 scripts/build_notebook_03.py
+	python3 scripts/build_notebooks_04_06.py
 	jupyter nbconvert --to notebook --execute --inplace notebooks/*.ipynb --ExecutePreprocessor.timeout=900

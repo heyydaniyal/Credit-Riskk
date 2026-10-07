@@ -1,11 +1,22 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+
+# Kaggle data: not redistributable, download it yourself
 data/raw/*.csv
+
+# Training outputs (rebuilt by the `make` phase targets)
 data/processed/*
 !data/processed/.gitkeep
 models/*.pkl
 models/*.txt
-.ipynb_checkpoints/
+
+# Runtime state
 data/request_log.sqlite
-artifacts/monitoring_reference.json
+
+# NOTE: artifacts/ IS committed in full. It is the hash-gated deployment
+# bundle (MANIFEST.json); ignoring any file in it breaks the Docker hash
+# gate and CI. (monitoring_reference.json used to be ignored here.)

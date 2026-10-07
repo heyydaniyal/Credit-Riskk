@@ -80,7 +80,7 @@ def main() -> None:
     # ── 2. THE GATE ────────────────────────────────────────────────────────
     gate_sample = dev[feats].sample(300, random_state=1)
     worst = {}
-    for k, b in enumerate(out["boosters"]):
+    for _k, b in enumerate(out["boosters"]):
         rep = verify_monotonicity(b, gate_sample, MONOTONIC_FEATURES)
         assert_monotone(rep)
         for f, v in rep.items():
