@@ -1,0 +1,11 @@
+{
+  "mean_auc": 0.5023720564072643,
+  "fold_aucs": [
+    0.503325730962302,
+    0.5010026003116286,
+    0.5027878379478624
+  ],
+  "threshold": 0.55,
+  "passed": 1.0,
+  "interpretation": "PASS \u2014 no pipeline leakage detected (AUC \u2248 0.50 as expected)."
+}

@@ -1,0 +1,7 @@
+{
+  "clean_p50_ms": 65.1538314999982,
+  "clean_p95_ms": 68.01410734997262,
+  "no_reason_codes_p95_ms": 46.45854245000578,
+  "contaminated_reading_p95_ms": 142.9,
+  "lesson": "the first Phase 6 benchmark and this one agree; the 143ms reading was taken while a LightGBM training job saturated the single CPU \u2014 benchmarks must be run on an idle machine, and a contended reading is a load artifact, not a regression"
+}

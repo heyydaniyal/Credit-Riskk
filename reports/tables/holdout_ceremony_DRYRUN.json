@@ -1,0 +1,136 @@
+{
+  "run_logged_at": "2026-07-20T22:24:50.520706",
+  "preflight": {
+    "rows": 20000,
+    "term_fallback_rows": 0,
+    "t_star_range": [
+      0.027371499568406198,
+      0.17475728155339804
+    ]
+  },
+  "consistency_vs_preregistered": {
+    "gap_in_preregistered_band": false,
+    "gap_band": [
+      0.03417299225281593,
+      0.07148157865809796
+    ],
+    "auc_in_sampling_band": false,
+    "auc_band": [
+      0.7688959737415533,
+      0.7821557969038258
+    ],
+    "verdict": "OUTSIDE a pre-registered band \u2014 a FINDING to report and investigate (playbook step 5: large AUC disagreement means the CV leaked), never a number to accept quietly"
+  },
+  "mode": "DRY_RUN (dev sample \u2014 NOT results)",
+  "n_rows": 20000,
+  "1_auc_deployed_ensemble": 0.8630034014423676,
+  "2_calibration": {
+    "brier": 0.05913185611998691,
+    "ece": 0.02518020484108887,
+    "climatology": 0.0736
+  },
+  "3_gap_instance_vs_best_flat": {
+    "per_10k": 2632560.780428022,
+    "relative": 0.012501441849908127,
+    "best_flat_frozen_from_dev": 0.08
+  },
+  "4_eur_savings_vs_naive_per_10k": 135324834.97825038,
+  "4_qualifier": "under the stated ILLUSTRATIVE economic assumptions",
+  "5_sensitivity": [
+    {
+      "param": "LGD_cash",
+      "value": 0.6,
+      "gap_vs_best_flat_per_10k": -2748462.9857183397,
+      "gap_vs_naive_per_10k": 109565954.26003653
+    },
+    {
+      "param": "LGD_cash",
+      "value": 0.7,
+      "gap_vs_best_flat_per_10k": -3811075.9075044394,
+      "gap_vs_naive_per_10k": 135324834.97825038
+    },
+    {
+      "param": "LGD_cash",
+      "value": 0.8,
+      "gap_vs_best_flat_per_10k": -5005539.471477509,
+      "gap_vs_naive_per_10k": 160951865.05427736
+    },
+    {
+      "param": "r_net_cash",
+      "value": 0.03,
+      "gap_vs_best_flat_per_10k": -521147.19446772337,
+      "gap_vs_naive_per_10k": 160363268.94454056
+    },
+    {
+      "param": "r_net_cash",
+      "value": 0.05,
+      "gap_vs_best_flat_per_10k": -3811075.9075044394,
+      "gap_vs_naive_per_10k": 135324834.97825038
+    },
+    {
+      "param": "r_net_cash",
+      "value": 0.08,
+      "gap_vs_best_flat_per_10k": -4800498.065595329,
+      "gap_vs_naive_per_10k": 108824809.06500822
+    },
+    {
+      "param": "ead_cash",
+      "value": 0.75,
+      "gap_vs_best_flat_per_10k": -2317408.1087707877,
+      "gap_vs_naive_per_10k": 114730213.89698404
+    },
+    {
+      "param": "ead_cash",
+      "value": 0.85,
+      "gap_vs_best_flat_per_10k": -3811075.9075044394,
+      "gap_vs_naive_per_10k": 135324834.97825038
+    },
+    {
+      "param": "ead_cash",
+      "value": 0.95,
+      "gap_vs_best_flat_per_10k": -4893223.49287504,
+      "gap_vs_naive_per_10k": 156330976.27287978
+    },
+    {
+      "param": "m_revolving",
+      "value": 0.1,
+      "gap_vs_best_flat_per_10k": -4928650.907504439,
+      "gap_vs_naive_per_10k": 136945959.97825038
+    },
+    {
+      "param": "m_revolving",
+      "value": 0.18,
+      "gap_vs_best_flat_per_10k": -3811075.9075044394,
+      "gap_vs_naive_per_10k": 135324834.97825038
+    },
+    {
+      "param": "m_revolving",
+      "value": 0.3,
+      "gap_vs_best_flat_per_10k": -757150.9075044394,
+      "gap_vs_naive_per_10k": 134270709.97825038
+    }
+  ],
+  "7_fairness_at_deployed_decisions": {
+    "F": {
+      "n": 13027,
+      "approval_rate": 0.6686113456666922,
+      "FPR_goods_rejected": 0.2952310108273411,
+      "FNR_defaulters_approved": 0.19719827586206898,
+      "mean_t_star": 0.08203880587914138
+    },
+    "M": {
+      "n": 6972,
+      "approval_rate": 0.5519219736087206,
+      "FPR_goods_rejected": 0.4044105981278756,
+      "FNR_defaulters_approved": 0.14050822122571002,
+      "mean_t_star": 0.07784371877986195
+    },
+    "disparate_impact_ratio": 0.8254750344662232
+  },
+  "8_scorecard_holdout_auc": 0.7393171276184143,
+  "profit_per_10k": {
+    "instance": 213213133.16835374,
+    "best_flat_0.08": 210580572.3879257,
+    "naive_0.5": 77888298.19010334
+  }
+}

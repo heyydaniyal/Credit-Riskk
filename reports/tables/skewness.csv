@@ -1,0 +1,10 @@
+feature,skewness,action
+AMT_INCOME_TOTAL,375.1,log-transform for logistic
+AMT_CREDIT,1.2,none needed
+AMT_ANNUITY,1.6,none needed
+AMT_GOODS_PRICE,1.3,none needed
+DAYS_BIRTH,-0.1,none needed
+DAYS_EMPLOYED,-2.0,none needed
+EXT_SOURCE_1,-0.1,none needed
+EXT_SOURCE_2,-0.8,none needed
+EXT_SOURCE_3,-0.4,none needed

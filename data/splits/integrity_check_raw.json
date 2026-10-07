@@ -1,0 +1,13 @@
+{
+  "check": "pipeline_integrity_raw_features",
+  "mean_auc": 0.5018,
+  "fold_aucs": [
+    0.5041,
+    0.4996,
+    0.5016
+  ],
+  "threshold": 0.55,
+  "passed": true,
+  "n_features": 104,
+  "interpretation": "PASS \u2014 dev vs holdout indistinguishable (AUC ~= 0.50 as expected by construction). Re-run on the engineered feature set at the end of Phase 2 to catch cross-boundary fit bugs."
+}

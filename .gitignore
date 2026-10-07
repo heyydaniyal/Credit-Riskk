@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+data/raw/*.csv
+data/processed/*
+!data/processed/.gitkeep
+models/*.pkl
+models/*.txt
+.ipynb_checkpoints/
+data/request_log.sqlite
+artifacts/monitoring_reference.json

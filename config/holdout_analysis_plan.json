@@ -1,0 +1,43 @@
+{
+  "frozen_at_phase": "3 (post-modeling, PRE-calibration \u2014 no Phase 4/5 result existed when this was written)",
+  "purpose": "Pre-registered analysis plan for the one-shot Phase 7 holdout ceremony. The ceremony script computes EXACTLY these outputs, in this order, once, and nothing else. Adding, removing, or reordering analyses after Phase 4/5 results exist would reintroduce the garden of forking paths this plan exists to close.",
+  "inputs": {
+    "model": "constrained-and-recalibrated 5-fold LightGBM ensemble (Phase 5 output) \u2014 NOT the unconstrained Phase 3 ensemble",
+    "calibrator": "isotonic fit on the CONSTRAINED ensemble's OOF (Phase 5 recalibration)",
+    "cost_parameters": "the frozen Phase 4c constants exactly as written in the spec \u2014 LGD {cash 0.70, rev 0.85}, EAD factors {cash 0.85, rev 1.00}, r_net 5%, m_rev 0.18, term formula with config/term_fallback_rule.json",
+    "data": "the 61,503-row holdout, touched by this script only",
+    "cost_accounting": "config/cost_evaluation_convention.json \u2014 realized-outcome profit ledger; best-flat selected on dev OOF and frozen; savings = \u0394profit per 10k applications"
+  },
+  "outputs_in_order": [
+    "1. Holdout AUC of the deployed ensemble (compare against OOF 0.777x \u2014 playbook step 5: large disagreement means CV leaked)",
+    "2. Holdout Brier + ECE + reliability diagram (10 quantile bins) of calibrated probabilities; compare against climatology 0.0736",
+    "3. Instance-dependent policy cost vs BEST-FLAT policy cost on holdout (the honest gap, reported whatever its size, narrative already locked at the Phase 4c OOF checkpoint)",
+    "4. Instance-dependent policy vs naive 0.5 threshold: EUR savings per 10,000 applications with the illustrative-assumptions qualifier (the headline)",
+    "5. Sensitivity table over the frozen grids (LGD +/-0.10, r_net 3-8%, EAD per spec) \u2014 recompute 3 and 4 per grid point",
+    "6. Profit vs approval-rate curve + swap-set 2x2 table vs the 0.5 baseline",
+    "7. Fairness at deployed decisions: disparate impact ratio, |dFPR|, |dFNR|, t*(x) distribution by gender (audit frame), against the Phase 5b pre-registered expectations",
+    "8. Scorecard holdout AUC (one line, for the honest model comparison)"
+  ],
+  "rules": [
+    "The script runs once. Re-runs after code fixes are permitted ONLY if no result of a prior run influenced the fix, and every run is logged in the ceremony output.",
+    "No metric outside this list is computed on holdout labels.",
+    "Numbers quoted anywhere as RESULTS come from this run; all OOF numbers remain labeled as development estimates."
+  ],
+  "enforcement_added_at_phase7_design_review": {
+    "preflight_gate": "label-free validation (contract types, NaN cost params, AMT_CREDIT) runs BEFORE any TARGET is read; aborts rather than silently rejecting every applicant",
+    "run_once_guard": "refuses to overwrite an existing ceremony result without --force; every invocation appended to ceremony_run_log.jsonl",
+    "consistency_check": "the ceremony itself reports whether AUC and gap fall inside the pre-registered bands from holdout_power_analysis.json; outside = a FINDING to investigate, never a number to accept quietly",
+    "preregistered_bands": {
+      "gap_95": [
+        0.0342,
+        0.0715
+      ],
+      "auc_95_sampling_only": [
+        0.7689,
+        0.7822
+      ],
+      "basis": "2000 bootstraps of dev per-row ledger differences resampled at n=61,503 (dev data only, before the ceremony)"
+    },
+    "holdout_feature_side_preflight_results": "contract types clean (2 known values), zero NaN cost params, 2 rows use the frozen term fallback, zero unseen categories, max NaN-rate difference vs dev 0.0035 \u2014 validated on FEATURES only; no label was read"
+  }
+}

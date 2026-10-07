@@ -1,0 +1,46 @@
+{
+  "frozen_at": "Phase 5 pre-implementation design review (no Phase 5 result existed)",
+  "5a_monotonic_constraints": {
+    "method": "basic",
+    "method_decision_evidence": "EXPERIMENT on real feature structure (40k rows, 300 trees): monotone_constraints_method='advanced' produced violations up to 0.166 RAW LOG-ODDS on constrained features (enough to move a PD from 10.0% to 11.6%) — it does NOT deliver the strict per-feature guarantee in our setting (58 features incl. 8 categoricals, heavy NaN). method='basic' produced EXACTLY ZERO violations. Since the entire point of constraints is the defensibility GUARANTEE, basic is the only admissible choice; its possibly-larger AUC cost is reported honestly (the spec's 'typically <=0.003' may be exceeded and that is a finding, not a failure).",
+    "constraint_vector": "positional, built from the lgbm_features.json order with 0 for all categoricals; 9 non-zero entries from config MONOTONIC_FEATURES (each pre-verified to exist in the final 58)",
+    "required_gate": "verify_monotonicity() sweep (15-point grid over the 2-98 pct range, 300 fixed rows, RAW-score space, tolerance 1e-9) must show ZERO violations on every constrained feature of every fold model before the pipeline may proceed to recalibration — a constrained model that fails this gate is a wiring bug, not a result",
+    "nan_note": "NaN routes freely under constraints (verified: valid predictions with 70%-missing constrained feature); the guarantee binds observed values, stated in docs",
+    "hyperparameters": "trial-20 params reused verbatim; no new tuning loop (spec time-box)"
+  },
+  "5a_shap_and_reason_codes": {
+    "engine": "booster.predict(pred_contrib=True) — exact TreeSHAP in LightGBM's C++ (verified additive to 3.5e-14, categorical-compatible); no external shap dependency for production paths",
+    "compute_plan": "measured 92 min/fold for full dev on this box -> global beeswarm from a STRATIFIED 25k SAMPLE of fold-1 (stated in the figure), per-applicant contributions computed on demand (single rows instant); spec's explain-fold-1 clause invoked",
+    "reason_code_sign_convention": "reason codes = the 3 LARGEST POSITIVE contributions to the DEFAULT log-odds (adverse-to-applicant); the spec's phrase 'negative SHAP contribution' is read as negative-for-the-applicant — pinned here so the sign cannot be inverted in implementation",
+    "raw_vs_calibrated": "SHAP explains the raw score; isotonic is monotone, so the feature RANKING carries to the calibrated decision — one sentence in docs, closes the audit question",
+    "score_scale": "score = 600 + 50/ln(2) * ln( ((1-p)/p) / 19 ), clipped to [300, 850]; PDO=50, 600 at 19:1 good:bad odds"
+  },
+  "5a_recalibration_sequence_final_pipeline": [
+    "1. retrain 5 constrained folds (basic method, trial-20 params, same frozen folds)",
+    "2. GATE: monotonicity verification on every fold model (zero violations required)",
+    "3. new OOF -> refit deployed isotonic (out_of_bounds=clip) -> cross-fitted metrics",
+    "4. re-verify OOF-vs-ensemble alignment overlay (PSI/KS)",
+    "5. recompute decision layer: t*(x) unchanged (frozen economics); BEST-FLAT RE-SELECTED ONCE on the CONSTRAINED pipeline's cross-fitted OOF (the deployed comparison; one fitted parameter, same grid, same ledger), then frozen for holdout",
+    "6. AUC cost vs unconstrained reported; recomputed gap reported next to the unconstrained 4.97% [4.2, 5.8] CI",
+    "7. the deployed artifact = constrained ensemble + ITS calibrator; the Phase 4 calibrator is retired"
+  ],
+  "5b_fairness_audit_plan": {
+    "proxy_model": "LightGBM predicting CODE_GENDER (F/M; the 4 XNA rows excluded) from the final 58 features; DEV ROWS ONLY, same frozen 5 folds, reported number = OOF AUC; default-ish params (lr 0.05, 63 leaves, 300 rounds ES 50) — no tuning (measurement, not optimization)",
+    "preregistered_expectation": "proxy OOF AUC 0.75-0.85 (well above the 0.65 flag); deliverable is measurement + disclosure + top-10 proxy carriers via pred_contrib — NOT remediation",
+    "decisions_audited": "the DEPLOYED rule: constrained pipeline's cross-fitted p_cal vs t*(x) on dev",
+    "metric_definitions_pinned": {
+      "approval_rate_g": "P(approve | group g)",
+      "disparate_impact_ratio": "min_g(approval rate) / max_g(approval rate); FLAG if < 0.8 (four-fifths)",
+      "FPR": "share of NON-defaulters (y=0) REJECTED, per group — harm to good customers",
+      "FNR": "share of defaulters (y=1) APPROVED, per group",
+      "equalized_odds_gaps": "|FPR_F - FPR_M| and |FNR_F - FNR_M|",
+      "t_star_distribution": "quantiles of t*(x) by group + share revolving by group (policy-level vs model-level disparity distinction)"
+    },
+    "preregistered_notes": [
+      "base default rates differ by gender in this data — a flagged DIR is a live possibility; if flagged it is REPORTED with the business-necessity / less-discriminatory-alternative governance framing, not adjudicated",
+      "per-group thresholds are disparate treatment in credit — remediation is NAMED with the legal tension, never implemented",
+      "only gender observable; no ethnicity in the data; the audit is partial and says so",
+      "framing ceiling: 'inspired by' ECOA/Reg B and EU practice — never 'compliant with'"
+    ]
+  }
+}

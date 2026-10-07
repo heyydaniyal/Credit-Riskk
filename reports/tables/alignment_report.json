@@ -1,0 +1,9 @@
+{
+  "ks_statistic": 0.004077103183636306,
+  "ks_pvalue": 0.03340940700438089,
+  "psi": 0.00023562281549866982,
+  "oof_std": 0.08828704223558909,
+  "ensemble_std": 0.09068976053125681,
+  "compression_ratio_std": 1.0272148464239657,
+  "note": "MEASURED, correcting the naive expectation: ensemble std is 2.7% LARGER than OOF (ratio 1.027), not compressed \u2014 on dev rows 4 of 5 fold models saw each row in training, and that in-sample sharpness outweighs averaging compression. On truly new data (holdout/production) all 5 models are out-of-sample, so this dev overlay slightly OVERSTATES the calibrator mismatch. Either way second-order: PSI 0.0002 is ~500x below the 0.10 monitoring band."
+}

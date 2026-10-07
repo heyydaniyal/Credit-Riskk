@@ -1,0 +1,15 @@
+{
+  "scope": "FULL observed range (0-100 pct), 1000 rows, 25-point grid, all 5 folds",
+  "worst_raw_violation_by_feature": {
+    "EXT_SOURCE_1": 0.0,
+    "EXT_SOURCE_2": 0.0,
+    "EXT_SOURCE_3": 0.0,
+    "ext_source_mean": 0.0,
+    "ext_source_min": 0.0,
+    "annuity_income_ratio": 0.0,
+    "prev_refusal_share": 0.0,
+    "bureau_bb_share_dpd_max": 0.0,
+    "bureau_utilization": 0.0
+  },
+  "passed": true
+}

@@ -1,0 +1,5 @@
+cell,n,default_rate,net_eur_under_new,net_eur_under_base
+approved by both,38326,0.035432865417732086,1050141455.8522255,1050141455.8522255
+"swapped IN (new approves, base rejects)",0,,0.0,0.0
+"swapped OUT (new rejects, base approves)",22916,0.15024437074533079,0.0,-642652730.2287936
+rejected by both,261,0.6283524904214559,0.0,0.0

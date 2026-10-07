@@ -1,0 +1,112 @@
+[
+  {
+    "SK_ID_CURR": 103477,
+    "p_cal": 1.0,
+    "score": 300.0,
+    "reason_codes": [
+      {
+        "feature": "ext_source_mean",
+        "plain_language": "low average external credit score",
+        "contribution": 1.1898730219709193
+      },
+      {
+        "feature": "ext_source_min",
+        "plain_language": "low external credit score (worst bureau)",
+        "contribution": 0.4377366958323369
+      },
+      {
+        "feature": "credit_goods_ratio",
+        "plain_language": "financed amount high relative to goods price",
+        "contribution": 0.29058011058649624
+      }
+    ]
+  },
+  {
+    "SK_ID_CURR": 190532,
+    "p_cal": 1.0,
+    "score": 300.0,
+    "reason_codes": [
+      {
+        "feature": "ext_source_mean",
+        "plain_language": "low average external credit score",
+        "contribution": 1.3509921044192819
+      },
+      {
+        "feature": "ext_source_min",
+        "plain_language": "low external credit score (worst bureau)",
+        "contribution": 0.4862411082968007
+      },
+      {
+        "feature": "bureau_days_credit_max",
+        "plain_language": "bureau days credit max",
+        "contribution": 0.4751706493477067
+      }
+    ]
+  },
+  {
+    "SK_ID_CURR": 315786,
+    "p_cal": 1.0,
+    "score": 300.0,
+    "reason_codes": [
+      {
+        "feature": "ext_source_mean",
+        "plain_language": "low average external credit score",
+        "contribution": 1.0365500321224435
+      },
+      {
+        "feature": "bureau_overdue_amt_max",
+        "plain_language": "bureau overdue amt max",
+        "contribution": 0.5164191256118027
+      },
+      {
+        "feature": "ext_source_min",
+        "plain_language": "low external credit score (worst bureau)",
+        "contribution": 0.43482949790551734
+      }
+    ]
+  },
+  {
+    "SK_ID_CURR": 357851,
+    "p_cal": 1.0,
+    "score": 300.0,
+    "reason_codes": [
+      {
+        "feature": "ext_source_mean",
+        "plain_language": "low average external credit score",
+        "contribution": 1.1337022676167277
+      },
+      {
+        "feature": "ext_source_min",
+        "plain_language": "low external credit score (worst bureau)",
+        "contribution": 0.4295885263859122
+      },
+      {
+        "feature": "term_years",
+        "plain_language": "loan term profile",
+        "contribution": 0.3578493781224933
+      }
+    ]
+  },
+  {
+    "SK_ID_CURR": 440963,
+    "p_cal": 0.9396763035828959,
+    "score": 300.0,
+    "reason_codes": [
+      {
+        "feature": "ext_source_mean",
+        "plain_language": "low average external credit score",
+        "contribution": 1.3351156330437235
+      },
+      {
+        "feature": "ext_source_min",
+        "plain_language": "low external credit score (worst bureau)",
+        "contribution": 0.457479252759892
+      },
+      {
+        "feature": "term_years",
+        "plain_language": "loan term profile",
+        "contribution": 0.36783290563131726
+      }
+    ]
+  }
+]

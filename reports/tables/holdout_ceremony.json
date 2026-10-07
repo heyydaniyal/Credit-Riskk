@@ -1,0 +1,136 @@
+{
+  "run_logged_at": "2026-07-21T05:09:54.637759",
+  "preflight": {
+    "rows": 61503,
+    "term_fallback_rows": 2,
+    "t_star_range": [
+      0.027369450737966657,
+      0.17475728155339804
+    ]
+  },
+  "consistency_vs_preregistered": {
+    "gap_in_preregistered_band": true,
+    "gap_band": [
+      0.03417299225281593,
+      0.07148157865809796
+    ],
+    "auc_in_sampling_band": true,
+    "auc_band": [
+      0.7688959737415533,
+      0.7821557969038258
+    ],
+    "verdict": "consistent with development \u2014 holdout fills in numbers, story unchanged"
+  },
+  "mode": "CEREMONY (one-shot holdout)",
+  "n_rows": 61503,
+  "1_auc_deployed_ensemble": 0.7802339714518662,
+  "2_calibration": {
+    "brier": 0.06623743652366387,
+    "ece": 0.0021433821907224882,
+    "climatology": 0.0736
+  },
+  "3_gap_instance_vs_best_flat": {
+    "per_10k": 6037680.388980013,
+    "relative": 0.03665671839682838,
+    "best_flat_frozen_from_dev": 0.08
+  },
+  "4_eur_savings_vs_naive_per_10k": 104491281.76329507,
+  "4_qualifier": "under the stated ILLUSTRATIVE economic assumptions",
+  "5_sensitivity": [
+    {
+      "param": "LGD_cash",
+      "value": 0.6,
+      "gap_vs_best_flat_per_10k": 5622777.44558709,
+      "gap_vs_naive_per_10k": 81843614.6948146
+    },
+    {
+      "param": "LGD_cash",
+      "value": 0.7,
+      "gap_vs_best_flat_per_10k": 5921550.116798962,
+      "gap_vs_naive_per_10k": 104491281.76329507
+    },
+    {
+      "param": "LGD_cash",
+      "value": 0.8,
+      "gap_vs_best_flat_per_10k": 6470956.131636456,
+      "gap_vs_naive_per_10k": 129842769.302937
+    },
+    {
+      "param": "r_net_cash",
+      "value": 0.03,
+      "gap_vs_best_flat_per_10k": 7687820.246711664,
+      "gap_vs_naive_per_10k": 138480733.35634983
+    },
+    {
+      "param": "r_net_cash",
+      "value": 0.05,
+      "gap_vs_best_flat_per_10k": 5921550.116798962,
+      "gap_vs_naive_per_10k": 104491281.76329507
+    },
+    {
+      "param": "r_net_cash",
+      "value": 0.08,
+      "gap_vs_best_flat_per_10k": 3886792.7332280534,
+      "gap_vs_naive_per_10k": 74177340.50406003
+    },
+    {
+      "param": "ead_cash",
+      "value": 0.75,
+      "gap_vs_best_flat_per_10k": 6500387.199823831,
+      "gap_vs_naive_per_10k": 86489027.344032
+    },
+    {
+      "param": "ead_cash",
+      "value": 0.85,
+      "gap_vs_best_flat_per_10k": 5921550.116798962,
+      "gap_vs_naive_per_10k": 104491281.76329507
+    },
+    {
+      "param": "ead_cash",
+      "value": 0.95,
+      "gap_vs_best_flat_per_10k": 6351500.668382108,
+      "gap_vs_naive_per_10k": 125325982.34609698
+    },
+    {
+      "param": "m_revolving",
+      "value": 0.1,
+      "gap_vs_best_flat_per_10k": 3739719.313910505,
+      "gap_vs_naive_per_10k": 105924845.97967474
+    },
+    {
+      "param": "m_revolving",
+      "value": 0.18,
+      "gap_vs_best_flat_per_10k": 5921550.116798962,
+      "gap_vs_naive_per_10k": 104491281.76329507
+    },
+    {
+      "param": "m_revolving",
+      "value": 0.3,
+      "gap_vs_best_flat_per_10k": 10066298.1870591,
+      "gap_vs_naive_per_10k": 104153651.89158145
+    }
+  ],
+  "7_fairness_at_deployed_decisions": {
+    "F": {
+      "n": 40561,
+      "approval_rate": 0.6646039298833856,
+      "FPR_goods_rejected": 0.30934393638170976,
+      "FNR_defaulters_approved": 0.31805359661495064,
+      "mean_t_star": 0.08106311242543875
+    },
+    "M": {
+      "n": 20940,
+      "approval_rate": 0.5428844317096466,
+      "FPR_goods_rejected": 0.4199138801764925,
+      "FNR_defaulters_approved": 0.21418506341005167,
+      "mean_t_star": 0.07784449232063884
+    },
+    "disparate_impact_ratio": 0.8168540800005555
+  },
+  "8_scorecard_holdout_auc": 0.7487705886445488,
+  "profit_per_10k": {
+    "instance": 170746379.17698738,
+    "best_flat_0.08": 164708698.78800738,
+    "naive_0.5": 66255097.4136923
+  }
+}

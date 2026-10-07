@@ -1,0 +1,43 @@
+{
+  "best_C": 0.1,
+  "oof_auc": 0.7447239120524607,
+  "train_oof_gap": 0.001086465293649197,
+  "grid_results": {
+    "0.01": {
+      "oof_auc": 0.7446947180504969,
+      "train_auc_mean": 0.7457668172346961,
+      "val_auc_mean": 0.7447105661744289,
+      "val_auc_std": 0.003249095366110102
+    },
+    "0.1": {
+      "oof_auc": 0.7447239120524607,
+      "train_auc_mean": 0.7458239388630628,
+      "val_auc_mean": 0.7447374735694136,
+      "val_auc_std": 0.003247995820120801
+    },
+    "1.0": {
+      "oof_auc": 0.7447146955657785,
+      "train_auc_mean": 0.7458279007554824,
+      "val_auc_mean": 0.7447297618993447,
+      "val_auc_std": 0.003249173778851795
+    },
+    "10.0": {
+      "oof_auc": 0.7447178142624242,
+      "train_auc_mean": 0.745827816287162,
+      "val_auc_mean": 0.7447329636851474,
+      "val_auc_std": 0.003249168664383762
+    },
+    "100.0": {
+      "oof_auc": 0.744717636585554,
+      "train_auc_mean": 0.7458276569517868,
+      "val_auc_mean": 0.7447331406954233,
+      "val_auc_std": 0.003249174695885538
+    }
+  },
+  "n_features": 30,
+  "expected_range": [
+    0.74,
+    0.76
+  ],
+  "note": "class_weight=balanced distorts probabilities (recalibrated in Phase 4); WOE binner refit inside every fold"
+}

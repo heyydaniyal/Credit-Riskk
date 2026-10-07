@@ -1,0 +1,8 @@
+{
+  "A_baseline": 0.7730392317302257,
+  "B_plus_debt_missing_feature": 0.7754130060100117,
+  "C_extended_constraints": 0.7730390424770875,
+  "delta_feature": 0.002373774279786023,
+  "delta_constraints": -1.8925313816087197e-07,
+  "note": "controlled fold-1 A/B/C at lr=0.05; deltas are the finding, not absolute AUC"
+}

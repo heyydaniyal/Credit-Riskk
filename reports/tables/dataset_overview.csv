@@ -1,0 +1,11 @@
+,value
+rows,246008.0
+columns,122.0
+memory_mb,273.4
+duplicate_rows,0.0
+numeric_features,106.0
+categorical_features,16.0
+cols_with_any_missing,68.0
+cols_missing_gt_50pct,41.0
+cols_missing_gt_80pct,0.0
+default_rate,0.0807

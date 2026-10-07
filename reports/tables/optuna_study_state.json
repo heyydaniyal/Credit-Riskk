@@ -1,0 +1,28 @@
+{
+  "n_trials_total": 13,
+  "n_complete": 8,
+  "n_pruned": 5,
+  "best_oof_auc": 0.7773546264322871,
+  "best_params": {
+    "learning_rate": 0.013787764619353767,
+    "num_leaves": 49,
+    "min_data_in_leaf": 215,
+    "feature_fraction": 0.6824279936868144,
+    "bagging_fraction": 0.8748115864875547,
+    "lambda_l1": 6.267062696005991e-07,
+    "lambda_l2": 0.00042472707398058225
+  },
+  "best_trial_number": 20,
+  "best_trial_user_attrs": {
+    "best_iterations": [
+      1561,
+      1657,
+      1215,
+      1753,
+      1140
+    ],
+    "train_oof_gap": 0.11688507326587272,
+    "fit_seconds": 695.9
+  },
+  "trial_budget": 150
+}

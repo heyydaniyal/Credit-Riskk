@@ -1,0 +1,13 @@
+{
+  "brier_raw": 0.06666384075548905,
+  "brier_calibrated_crossfit": 0.06670058286491345,
+  "brier_climatology": 0.0736,
+  "beats_climatology_by": 0.006899417135086544,
+  "ece_raw": 0.003263358744839053,
+  "ece_calibrated_crossfit": 0.0006901077789101167,
+  "target_range_brier": [
+    0.065,
+    0.07
+  ],
+  "measurement": "cross-fitted (fit on 4 folds' OOF, scored on the 5th, rotated) \u2014 the deployed calibrator is fit on all OOF and is NOT what these numbers grade"
+}

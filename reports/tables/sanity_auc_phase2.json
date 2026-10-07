@@ -1,0 +1,10 @@
+{
+  "fold1_auc": 0.7720209830520474,
+  "expected_range": [
+    0.76,
+    0.8
+  ],
+  "leakage_alarm_above": 0.81,
+  "note": "sanity tripwire only \u2014 Phase 3 owns real numbers",
+  "alarm": false
+}

@@ -1,0 +1,55 @@
+{
+  "alarm": "train-OOF gap 0.1169 > 0.025 (spec 3c)",
+  "adjudication": "BENIGN \u2014 memorization without generalization harm",
+  "evidence": {
+    "corr_oof_vs_gap_across_trials": -0.0649421782477875,
+    "trials_gap_vs_oof": [
+      {
+        "trial": 0,
+        "oof_auc": 0.7736859455066197,
+        "gap": 0.10933225205758579
+      },
+      {
+        "trial": 4,
+        "oof_auc": 0.7755624479337747,
+        "gap": 0.13852403951396453
+      },
+      {
+        "trial": 5,
+        "oof_auc": 0.7738782920740922,
+        "gap": 0.10936875052872574
+      },
+      {
+        "trial": 7,
+        "oof_auc": 0.7759470315235818,
+        "gap": 0.1262190227090575
+      },
+      {
+        "trial": 8,
+        "oof_auc": 0.7744432049961276,
+        "gap": 0.1289828245118546
+      },
+      {
+        "trial": 9,
+        "oof_auc": 0.7755624479337747,
+        "gap": 0.13852403951396453
+      },
+      {
+        "trial": 18,
+        "oof_auc": 0.7773455793843247,
+        "gap": 0.10060271511428187
+      },
+      {
+        "trial": 20,
+        "oof_auc": 0.7773546264322871,
+        "gap": 0.11688507326587272
+      }
+    ],
+    "reading": "What the study data actually shows (correcting the first-draft narrative): (1) EVERY completed trial \u2014 including the most regularized (trial 8, lambda_l2=5) \u2014 sits at gap 0.10\u20130.14; the spec's 0.025 alarm level is unreachable anywhere in the frozen search space, so the gap is a property of boosted trees on this data, not a tunable pathology. (2) Across the 8 completed trials, gap shows no relationship with OOF AUC (r=-0.065 \u2014 with n=8 this correlation is itself statistically uninformative; the range argument in (1) is the load-bearing evidence, not the r value). (3) The deployed config in fact has among the SMALLEST gaps while achieving the best OOF. The alarm did its job \u2014 it forced this audit; the audit's verdict is benign memorization, with the one-shot holdout as final adjudicator (playbook step 5) in Phase 7."
+  },
+  "playbook_step5_check": "if holdout later disagrees badly with OOF, CV was leaking \u2014 Phase 7 will test this",
+  "confidence_caveats": [
+    "n=8 completed trials: the correlation estimate is noise; the range argument (all trials gap 0.10-0.14, alarm unreachable in the frozen space) carries the adjudication",
+    "convergence claim is LOCAL: two configs from the same low-lr neighborhood reaching identical OOF is neighborhood-plateau evidence, not proof of the global optimum; the study is resumable (make tune) and the recorded search contains a time-cap bias against the slowest corner (lr<~0.013), stated in MODELING.md"
+  ]
+}

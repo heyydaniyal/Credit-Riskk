@@ -1,0 +1,19 @@
+{
+  "purpose": "Docker deployment set \u2014 the image build re-verifies these hashes and FAILS on drift, so a stale model cannot ship",
+  "sha256": {
+    "categorical_levels.json": "5781f54541ab3a1f2b17944e3c89c0bdcc81d8b2b34f6793d2109c9551b6526b",
+    "demo_pool.parquet": "bb4c1b4af8889e784a2d0b7c18361e870f654286722a85775c4c090a32dedaec",
+    "feature_manifest.csv": "47b192292f227536a552a493205eb309fe28a2db7bda2315b198ed30fdcb4754",
+    "golden_scoring.json": "ad523cbc5ca44f260b3a092c2777109bc05e1b7ef87c41d4803cff1e502ae09c",
+    "isotonic_final.pkl": "b995b0f40c9cbb044feba738971973ffc0ec5f219f453dc1a0c2710758951ed3",
+    "lgbm_constrained_fold0.txt": "07e67f9152a4a0e22b64d50643006e926d70ebbf79d6d1576ff0ba0b3055c125",
+    "lgbm_constrained_fold1.txt": "156f1f48c84c75d965da316eb997efa524ab31c27a42880c6c65e47e4990371c",
+    "lgbm_constrained_fold2.txt": "9c37fb5f073c350861b7f3dfd15682defcdc441bd790f7dca4cbca9a309de78f",
+    "lgbm_constrained_fold3.txt": "b2f8e91e83aeef880ed87d5b28338833424a35374a7c5032b5d14e823c5c56c7",
+    "lgbm_constrained_fold4.txt": "8021c88be3721bb6b465ae619902b648ad59cbe0b3812468da658793850ba7d8",
+    "lgbm_features.json": "5de8a3080b5e3a6470c428659abcc9619664bf6317516bd2bb35c82d37a9cb93",
+    "monitoring_reference.json": "fb6f0f47b03b84a667127b58ca188a3d32025c3a66addbb884842c7177c5eac0",
+    "scorecard_folds.pkl": "0c690f95055676505fd4b3fae16785d434d7125b5a9d0b694e14bb7a3a4be51d",
+    "term_fallback_rule.json": "436345c2eb967f5e23c49c840b1103fd7c17d8a384510a087a477966c3cf3a87"
+  }
+}

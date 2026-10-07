@@ -1,0 +1,66 @@
+{
+  "proxy_check": {
+    "proxy_oof_auc": 0.9069547532044171,
+    "preregistered_expectation": [
+      0.75,
+      0.85
+    ],
+    "flag_threshold": 0.65,
+    "fired": true,
+    "top10_proxy_carriers_fold1": {
+      "OCCUPATION_TYPE": 0.9654389621130142,
+      "OWN_CAR_AGE": 0.5430166744202082,
+      "EXT_SOURCE_1": 0.3064274343933368,
+      "ORGANIZATION_TYPE": 0.2970420097239751,
+      "annuity_income_ratio": 0.28142706967101055,
+      "NAME_FAMILY_STATUS": 0.2732818302766106,
+      "AMT_ANNUITY": 0.22972598511334427,
+      "FLAG_DOCUMENT_3": 0.17858043960516756,
+      "DAYS_BIRTH": 0.1685497947344809,
+      "DAYS_ID_PUBLISH": 0.15783225425543998
+    },
+    "ablations": {
+      "full_58": 0.907,
+      "without_OCCUPATION_TYPE": 0.8645,
+      "without_top3_carriers": 0.8401,
+      "reading": "gender encoding is DIFFUSE, not concentrated: removing the dominant carrier costs 0.043 AUC and removing the top-3 still leaves 0.840 \u2014 far above the 0.65 flag. 'Excluding features cannot sanitize the model' is now a measured fact; feature-deletion remediation would require gutting the legitimate feature set."
+    }
+  },
+  "decision_metrics": {
+    "F": {
+      "n": 161887,
+      "approval_rate": 0.6654888903988585,
+      "FPR_goods_rejected": 0.3075793906464833,
+      "FNR_defaulters_approved": 0.3077466031409917,
+      "mean_t_star": 0.0815357460187534,
+      "t_star_quantiles": {
+        "0.1": 0.036458873997345896,
+        "0.5": 0.07343778621129134,
+        "0.9": 0.11718460079770536
+      },
+      "share_revolving": 0.09753099384138318,
+      "base_default_rate": 0.07001179835317227
+    },
+    "M": {
+      "n": 84119,
+      "approval_rate": 0.543694052473282,
+      "FPR_goods_rejected": 0.41962880160861454,
+      "FNR_defaulters_approved": 0.21850809289232934,
+      "mean_t_star": 0.07765878790662632,
+      "t_star_quantiles": {
+        "0.1": 0.03437191512061793,
+        "0.5": 0.06752596562050037,
+        "0.9": 0.1169275481467077
+      },
+      "share_revolving": 0.09102580867580451,
+      "base_default_rate": 0.1013564117500208
+    },
+    "summary": {
+      "disparate_impact_ratio": 0.816984415994414,
+      "four_fifths_flag": false,
+      "abs_FPR_gap": 0.11204941096213122,
+      "abs_FNR_gap": 0.08923851024866239
+    }
+  },
+  "scope": "dev only; gender only (no ethnicity in data \u2014 audit is partial); framing: inspired by governance practice, not compliance"
+}

@@ -1,0 +1,12 @@
+check,result,severity,action_for_phase2
+Duplicate SK_ID_CURR,0 duplicates,ok,none needed
+CODE_GENDER == 'XNA',2 rows,minor,exclude from gender fairness audit groups (keep in model data)
+AMT_INCOME_TOTAL max vs p99,"max=117,000,000 vs p99=472,500 (248x)",major,log-transform for logistic; LightGBM splits are rank-based (robust)
+AMT_ANNUITY missing,10 rows,major (cost model input),"impute with fold-median for term calc; flag; cap term to [0.5, 7] anyway"
+AMT_GOODS_PRICE missing,221 rows,minor,ratio -> NaN + _is_missing flag (LightGBM handles NaN)
+DAYS_EMPLOYED sentinel remaining,0 rows (0 = loader fixed it),ok,add is_pensioner flag from NAME_INCOME_TYPE=='Pensioner'
+Constant columns,none,minor,drop
+Near-constant columns (>99.9% one value),"10: ['FLAG_MOBIL', 'FLAG_DOCUMENT_2', 'FLAG_DOCUMENT_4', 'FLAG_DOCUMENT_7', 'FLAG_DOCUMENT_10']",minor,"drop (no signal, wastes selection budget)"
+Non-positive AMT_CREDIT,0 rows,ok,none needed
+CNT_FAM_MEMBERS max,20,minor,cap at p99.9 for logistic; leave for LightGBM
+DAYS_LAST_PHONE_CHANGE == 0,"30,085 rows",minor,0 means 'changed today' — plausible at application; keep

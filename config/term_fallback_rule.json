@@ -1,0 +1,9 @@
+{
+  "purpose": "FROZEN BEFORE PHASE 4 \u2014 t*(x) must be computable for every applicant. Where AMT_ANNUITY is missing/zero (term_years NaN), impute the dev-median term of the applicant's contract type and set fallback flag. Frozen now so the rule cannot be tuned after any cost-gap number exists.",
+  "dev_median_term_years_by_contract": {
+    "Cash loans": 1.7230710582494664,
+    "Revolving loans": 1.6666666666666667
+  },
+  "n_dev_rows_needing_fallback": 10,
+  "flag_field": "term_fallback_used"
+}

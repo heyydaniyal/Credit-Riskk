@@ -1,0 +1,25 @@
+{
+  "frozen_at_phase": "3\u21924 boundary (design review, BEFORE any cost/gap/calibration number was computed)",
+  "purpose": "The spec freezes the cost PARAMETERS but not the ACCOUNTING. 'EUR saved per 10,000 applications' changes with the ledger convention and with how the flat baseline is selected \u2014 ambiguities that could be resolved post-hoc to pick the bigger headline. This file closes them before any number exists.",
+  "ledger_convention": {
+    "name": "realized-outcome profit ledger",
+    "approved_good": "+ m(x) * AMT_CREDIT   (realized margin)",
+    "approved_defaulter": "- LGD(x) * ead_factor(x) * AMT_CREDIT   (realized loss)",
+    "rejected_anyone": "0   (opportunity cost appears as the profit the policy fails to earn, not as a separate charge)",
+    "policy_value": "sum of ledger over applicants",
+    "savings_definition": "profit(policy A) - profit(policy B), scaled to per-10,000-applications",
+    "why_realized_not_expected": "policies are DECIDED with p_cal but EVALUATED with observed outcomes (y) - evaluating with p_cal would let a miscalibrated model grade itself"
+  },
+  "baseline_definitions": {
+    "naive_baseline": "flat threshold 0.5 on p_cal",
+    "best_flat": "the single flat threshold maximizing the profit ledger on DEV OOF predictions OF THE DEPLOYED PIPELINE (Phase 5 amendment, made pre-implementation: after the constrained retrain, best-flat is re-selected ONCE on the constrained pipeline's cross-fitted OOF \u2014 one fitted parameter, same grid, same ledger \u2014 then frozen and evaluated on holdout; never re-optimized on holdout. The unconstrained best-flat 0.095 remains the recorded Phase 4 dev comparison.",
+    "instance_policy": "approve iff p_cal < t*(x) with the frozen Phase 4c parameters"
+  },
+  "expectation_update_from_design_review": "Annuity-implied cash terms are short in this book (median 1.72y, p95 2.9y), so realized cash t* spans ~0.03-0.11 rather than the spec's theoretical 0.02-0.23; revolving (t*=0.175, 9.5% of book) sits above nearly the whole cash range. The instance-vs-best-flat gap expectation therefore leans to the modest end of the spec's 1-3% band. Written before the gap computation; the pre-registered framing ('small but free') stands unchanged.",
+  "implementation_pins": [
+    "IsotonicRegression(out_of_bounds='clip') - holdout scores outside the OOF range must clip, not NaN (observed p_raw range 0.0009-0.8136)",
+    "term fallback per config/term_fallback_rule.json before computing t*(x)",
+    "cross-fitted calibration metrics use the fold column in oof_lgbm.parquet",
+    "revolving uses m_rev=0.18 and ignores term_years entirely"
+  ]
+}

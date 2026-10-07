@@ -1,0 +1,54 @@
+{
+  "computed_on": "cross-fitted calibrated OOF (development estimates \u2014 NOT results; the quoted numbers come from the one-shot holdout, Phase 7)",
+  "frozen_parameters_untouched": true,
+  "best_flat_threshold_dev": 0.095,
+  "eur_weighted_mean_t_star": 0.0857771142539808,
+  "profit_per_10k": {
+    "naive_0.5": 67913053.32313564,
+    "best_flat_0.095": 163506010.38146457,
+    "instance_t_star": 171634000.62775713
+  },
+  "gap_instance_vs_best_flat_per_10k": 8127990.24629256,
+  "gap_instance_vs_best_flat_relative": 0.049710651170129516,
+  "gap_instance_vs_naive_per_10k": 103720947.30462149,
+  "term_fallback_rows_used": 10,
+  "LOCKED_NARRATIVE": "At the OOF checkpoint the instance-dependent policy beats the best flat threshold by 4.97% of policy profit (dev estimate) \u2014 ABOVE the pre-registered 1-3% plausibility band. The decomposition explains why without any parameter change: the cash t*(x) band (0.03-0.11) straddles the densest region of the calibrated PD distribution, so 13.4% of cash applicants are decided differently, and revolving's 0.175 threshold differs sharply from the flat 0.095 for 9.5% of the book. Term-driven variation contributes ~5x the revolving contribution, as the spec anticipated. The gain remains free \u2014 same model, same calibration, zero runtime cost \u2014 and the framework is what scales when LGD/EAD models and risk-based pricing get richer. The vs-0.5 number (naive baseline) is never a substitute for this comparison. Narrative locked at the OOF checkpoint, before the holdout run; no cost parameter was or will be revised; the holdout fills in the quoted number, whatever it is.",
+  "gap_decomposition_per_10k": {
+    "cash_term_driven": 6762843,
+    "revolving_lgd_ead_driven": 1365148
+  },
+  "audit": "independent numpy recompute matched to the euro; decomposition consistent with spec expectation (term-driven >> revolving)",
+  "uncertainty_audit": {
+    "gap_bootstrap_95CI_per_10k": [
+      6891284,
+      9540303
+    ],
+    "gap_bootstrap_95CI_relative": [
+      0.0421,
+      0.0583
+    ],
+    "P_gap_positive": 1.0,
+    "P_gap_above_preregistered_band_floor": 1.0,
+    "method": "1000 iid applicant bootstraps of the per-row ledger difference; frozen parameters (measurement, not tuning)",
+    "decision_band_calibration": {
+      "band": [
+        0.02,
+        0.2
+      ],
+      "n": 173137,
+      "worst_bin_abs_err": 0.0013,
+      "band_ece": 0.00072
+    },
+    "concentration": "top-1% loans carry 1.0% of |gap| vs 3.6% of exposure \u2014 broad-based, not whale-driven",
+    "isotonic_granularity": "590 unique p_cal steps; largest plateau 3,360 applicants \u2014 lumpiness absorbed by the bootstrap"
+  },
+  "holdout_expectations_preregistered": {
+    "written": "at the Phase 4 audit, BEFORE any holdout contact",
+    "expectations": [
+      "holdout gap point estimate inside or near the OOF bootstrap CI [4.2%, 5.8%], with wider sampling noise (n=61.5k, one quarter of dev)",
+      "ASYMMETRY, stated in advance: best-flat (0.095) carries ONE parameter fitted on dev, the instance policy carries ZERO fitted parameters; the frozen 0.095 should mildly underperform its dev profit on holdout, so any holdout gap slightly ABOVE the OOF point is the expected direction of this selection-bias asymmetry, not a surprise or a cherry-pick",
+      "holdout AUC within per-fold sigma (~0.001) of OOF 0.7774 for the (unconstrained) ensemble family; large disagreement = playbook step 5 (CV leak) alarm",
+      "these numbers describe the UNCONSTRAINED pipeline; the Phase 5 constrained-and-recalibrated pipeline supersedes it as the deployed artifact and its gap is recomputed by make final-pipeline"
+    ]
+  }
+}

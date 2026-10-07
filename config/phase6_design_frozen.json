@@ -1,0 +1,27 @@
+{
+  "frozen_at": "Phase 6 pre-implementation design review (no Phase 6 code existed)",
+  "validation_evidence": {
+    "A_api_field_list": "59 fields = 58 model features ∪ {NAME_CONTRACT_TYPE, term_years, AMT_CREDIT} (2 overlap)",
+    "B_transport_parity": "THE critical experiment: 25 golden applicants serialized to JSON (NaN→null, categories→str), reconstructed as the API will, scored via DeployedPipeline → pd_calibrated/decision/score_scaled ALL exactly match the golden file. The HTTP layer introduces zero skew by design, and the API-golden test will keep it that way.",
+    "C_latency_measured": "single-row p50=62ms, p95=65ms WITH reason codes (46ms without) on this 1-CPU sandbox → spec's <100ms p95 met with margin; the honest measured number is what the docs quote",
+    "D_stack_smoke": "manifest-driven pydantic model (59 fields) generated programmatically; TestClient: /score 200, /health 200, bad-type input → 422",
+    "E_artifact_whitelist": "11 files, 42.4 MB total (5 constrained folds, isotonic_final, scorecard_folds, feature list, categorical contract, golden file, term fallback) — image-friendly; sha256 manifest at build, image build FAILS on missing/drifted artifact",
+    "F_monitoring_reference": "top-10 SHAP features + 246,008 dev ensemble scores exist as artifacts → reference PSI bins precomputed at build into monitoring_reference.json",
+    "G_streamlit": "1.59.2 importable; added to requirements"
+  },
+  "frozen_decisions": {
+    "docker_artifacts": "whitelisted artifacts/ dir + sha256 manifest; golden regression test runs INSIDE the container as a build gate; never retrain at build",
+    "pydantic_policy": "programmatic from feature_manifest.csv; numeric fields Optional[float] (JSON null → NaN); categorical fields UNCONSTRAINED Optional[str] — unseen values are NOT rejected but NaN-routed by the contract with counts logged, because drift observability beats strict rejection; hand-written range checks only for the top-20 SHAP features (warn-level, reject only on impossible values)",
+    "score_response_fields": ["pd_calibrated (display-clipped)", "decision", "threshold_applied", "lgd_used", "ead_factor_used", "margin_used", "term_fallback_used", "reason_codes[3] (always, adverse top-3)", "score_scaled", "unseen_category_counts", "cost_params_note: 'illustrative assumptions'"],
+    "cost_overrides": "/score accepts optional cost_overrides BOUNDED BY THE FROZEN SENSITIVITY GRIDS (LGD_cash 0.6-0.8, r_net 0.03-0.08, ead_cash 0.75-0.95, m_rev 0.10-0.30) — the demo sliders can explore sensitivity but can never present economics outside the pre-registered grids as system output; response echoes overrides used",
+    "featurize_cli": "demo path = lookup by SK_ID_CURR from the precomputed matrix (honest: bureau joins are upstream-pipeline work); raw-row mode for the application table alone with aggregates NaN'd + flags, degradation documented",
+    "request_logging": "SQLite (append-friendly single file) — features, p_raw, p_cal, threshold, decision, timestamp; log_request() in the handler",
+    "monitoring_watchlist": "PSI on top-10 SHAP features + SCORE PSI + rolling approval rate + mean t*(x) (the metric instance-dependent thresholds make necessary); bands 0.10/0.25 with citations; label-latency paragraph mandatory",
+    "drift_demo_gate": "the simulate-drift button (1,000 rows, incomes -20%) MUST turn PSI bars red live — phase not done until the alarm demonstrably fires; button + docs both say 'simulated'",
+    "serving_plumbing": "Streamlit process launches uvicorn on an internal port (single-container host pattern), documented",
+    "streamlit_tabs": "Score (applicant + sliders labeled 'illustrative assumptions — explore sensitivity') | Monitoring (PSI dashboard + drift button)",
+    "new_tests": ["schema rejects bad input (422)", "exactly 3 reason codes for a rejected applicant", "API-path golden test: 25 golden applicants through HTTP reproduce frozen outputs"],
+    "docker": "python:3.11-slim multi-stage, pinned requirements, container-internal golden gate"
+  },
+  "honest_scope": "live demo URL requires the owner's hosting credentials; this phase delivers the deployable repo + container + instructions, validated as far as the sandbox can execute"
+}

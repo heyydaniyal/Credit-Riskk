@@ -1,0 +1,71 @@
+{
+  "constrained_oof_auc": 0.7767661982659058,
+  "unconstrained_oof_auc": 0.7773546264322871,
+  "auc_cost_of_constraints": 0.0005884281663813828,
+  "spec_typical_cost": 0.003,
+  "best_iterations": [
+    1307,
+    1540,
+    1448,
+    1794,
+    1533
+  ],
+  "monotonicity_gate": {
+    "passed": true,
+    "worst_raw_violation_by_feature": {
+      "EXT_SOURCE_1": 0.0,
+      "EXT_SOURCE_2": 0.0,
+      "EXT_SOURCE_3": 0.0,
+      "ext_source_mean": 0.0,
+      "ext_source_min": 0.0,
+      "annuity_income_ratio": 0.0,
+      "prev_refusal_share": 0.0,
+      "bureau_bb_share_dpd_max": 0.0,
+      "bureau_utilization": 0.0
+    },
+    "strengthened": {
+      "scope": "FULL observed range (0-100 pct), 1000 rows, 25-point grid, all 5 folds",
+      "worst_raw_violation_by_feature": {
+        "EXT_SOURCE_1": 0.0,
+        "EXT_SOURCE_2": 0.0,
+        "EXT_SOURCE_3": 0.0,
+        "ext_source_mean": 0.0,
+        "ext_source_min": 0.0,
+        "annuity_income_ratio": 0.0,
+        "prev_refusal_share": 0.0,
+        "bureau_bb_share_dpd_max": 0.0,
+        "bureau_utilization": 0.0
+      },
+      "passed": true
+    }
+  },
+  "calibration": {
+    "brier_crossfit": 0.06671014837360797,
+    "ece_crossfit": 0.0007791973750939077,
+    "climatology": 0.0736
+  },
+  "alignment": {
+    "ks_statistic": 0.0038372735845988715,
+    "ks_pvalue": 0.05329986343741955,
+    "psi": 0.0001884331671764982,
+    "oof_std": 0.0936642342595954,
+    "ensemble_std": 0.0954715388943736,
+    "compression_ratio_std": 1.019295568357172,
+    "note": "measured: ensemble std 1.9% LARGER than OOF (in-sample sharpness of 4/5 models on dev rows outweighs averaging compression, as in Phase 4); PSI 0.00019 \u2014 second-order, calibrator alignment verified"
+  },
+  "decision": {
+    "best_flat_threshold_constrained": 0.08,
+    "profit_per_10k": {
+      "best_flat_constrained": 162754161.4936679,
+      "instance_t_star": 171341614.86795837,
+      "naive_0.5": 67910502.31519163
+    },
+    "gap_instance_vs_best_flat_per_10k": 8587453.374290466,
+    "gap_relative": 0.05276334132091958,
+    "unconstrained_gap_CI_for_reference": [
+      0.0421,
+      0.0583
+    ]
+  },
+  "deployed_artifact": "constrained ensemble + isotonic_final.pkl (Phase 4 calibrator retired)"
+}

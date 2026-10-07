@@ -1,0 +1,12 @@
+{
+  "expected_holdout_gap_95": [
+    0.03417299225281593,
+    0.07148157865809796
+  ],
+  "expected_holdout_auc_95_sampling_only": [
+    0.7688959737415533,
+    0.7821557969038258
+  ],
+  "method": "2000 bootstraps of dev per-row ledger differences resampled at n=61,503 (dev data only)",
+  "purpose": "pre-registered consistency band \u2014 a holdout result outside these is a FINDING to investigate, not a number to accept quietly"
+}

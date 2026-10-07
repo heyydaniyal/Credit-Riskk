@@ -1,0 +1,37 @@
+{
+  "params": {
+    "learning_rate": 0.013787764619353767,
+    "num_leaves": 49,
+    "min_data_in_leaf": 215,
+    "feature_fraction": 0.6824279936868144,
+    "bagging_fraction": 0.8748115864875547,
+    "lambda_l1": 6.267062696005991e-07,
+    "lambda_l2": 0.00042472707398058225
+  },
+  "n_optuna_trials_complete": 8,
+  "oof_auc_pooled": 0.7773546264322871,
+  "val_auc_mean": 0.7773859784962687,
+  "val_aucs_per_fold": [
+    0.7765775195325938,
+    0.7765932052779805,
+    0.7774513402350614,
+    0.7791848094858976,
+    0.7771230179498101
+  ],
+  "train_auc_mean": 0.8942710517621414,
+  "train_oof_gap": 0.11688507326587272,
+  "gap_threshold": 0.025,
+  "diagnosis": "gap 0.1169 > 0.025 alarm \u2014 audited with study evidence (gap_adjudication.json, fig 33): gap is 0.10-0.14 across the ENTIRE frozen search space and uncorrelated with OOF (r=-0.065); benign boosted-tree memorization, selection stays on OOF, holdout adjudicates in Phase 7",
+  "best_iterations": [
+    1561,
+    1657,
+    1215,
+    1753,
+    1140
+  ],
+  "expected_range": [
+    0.775,
+    0.79
+  ],
+  "leakage_alarm_above": 0.81
+}
